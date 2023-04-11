@@ -132,6 +132,7 @@ PROCESS_THREAD(example_collect_process, ev, data)
 			     printf("I got the message as :-  ");
 			    char *line=NULL;
 			    line = (char *)data;
+          // int event_id = atoi
 			    printf("%s\n",line);
 			    static linkaddr_t oldparent;
 			      const linkaddr_t *parent;
