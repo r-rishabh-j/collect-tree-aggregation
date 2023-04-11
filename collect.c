@@ -48,7 +48,7 @@
 #include "./collect.h"
 #include "net/rime/collect-neighbor.h"
 #include "net/rime/collect-link-estimate.h"
-#include "net/rime/packetqueue.h"
+#include "packetqueue.h"
 #include "dev/radio-sensor.h"
 #include "lib/random.h"
 #include <string.h>
