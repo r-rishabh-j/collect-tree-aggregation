@@ -1,6 +1,13 @@
 #include "sys/ctimer.h"
 #include "packetqueue.h"
 
+struct queueElement{
+  int Eid;
+  char srcList[100];
+  struct queueElement* prev;
+  struct queueElement* next;
+};
+
 /*---------------------------------------------------------------------------*/
 void packetqueue_init(struct packetqueue *q)
 {
@@ -111,3 +118,71 @@ packetqueue_ptr(struct packetqueue_item *i)
 }
 /*---------------------------------------------------------------------------*/
 /** @} */
+
+
+struct queueElement* aggregateCustomQueue(struct queueElement *head)
+{
+  if(head==NULL)
+  {
+    return head;
+  }
+
+  struct queueElement* ptr=head;
+  while(ptr!=NULL)
+  {
+    struct queueElement* it=ptr->next;
+    while(it!=NULL)
+    {
+      if(it->Eid==ptr->Eid)
+      {
+        //making a bigger source list.
+        sprintf(ptr->srcList,"%s,%s",ptr->srcList,it->srcList);
+        
+        // we need to delete this element now.
+        struct queueElement* toDel=it;
+
+        // updating the next and previous ptrs
+        it->prev->next = it->next;
+        
+        if(it->next!=NULL)
+        {
+          it->next->prev = it->prev;
+        }
+        it=it->next;
+        
+        // deleting the allocated memory for the current node
+        free(toDel);
+      }
+      else
+      {
+        it=it->next;
+      }
+    }
+    ptr=ptr->next;
+  }
+
+  return head;
+}
+
+struct queueElement* pushCustomQueue(struct queueElement *head,int Eid,char srcList[100])
+{
+  if(head==NULL)
+  {
+    // inserting the first element into the queue
+    head = (struct queueElement *)malloc(sizeof(struct queueElement));
+    head->prev=NULL;
+    head->next=NULL;
+    return head;
+  }
+
+  // making a new head of the queue (inserting the new element into it)
+  struct queueElement *newHead = head;
+  newHead = (struct queueElement *)malloc(sizeof(struct queueElement));
+  newHead->prev = NULL;
+  head->prev = newHead;
+  newHead->next=head;
+
+  head = newHead;
+
+  return head;
+}
