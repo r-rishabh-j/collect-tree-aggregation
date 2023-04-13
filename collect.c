@@ -96,7 +96,7 @@ struct data_msg_hdr
    combination of the flags. The ACK header also contains the routing
    metric of the node that sends tha ACK. This is used to keep an
    up-to-date routing state in the network. */
-   
+
 struct ack_msg
 {
   uint8_t flags, dummy;
@@ -219,6 +219,43 @@ static void send_queued_packet(struct collect_conn *c);
 static void retransmit_callback(void *ptr);
 static void retransmit_not_sent_callback(void *ptr);
 static void set_keepalive_timer(struct collect_conn *c);
+
+/*---------------------------------------------------------------------------*/
+// aggregation functions
+// ID:<event_id>|mote_id1, mote_id2, ...
+void aggregate_buffer(char *a, char *b, char *out)
+{
+  // char* token_a = strtok(a, "|");
+  // char* token_b = strtok(b, "|");
+  // char *list_a = strchr(a, '|') + 1;
+  char *list_b = strchr(b, '|') + 1;
+  sprintf(out, "%s,%s", a, list_b);
+}
+
+/*---------------------------------------------------------------------------*/
+
+/*
+Use the packet on the head of the packet list and aggregate it with packets of same event ID
+in the queue.
+*/
+static void aggregate_queue(struct collect_conn *c)
+{
+  struct packqueue_item *head = list_head(c->send_queue.list);
+  
+}
+
+struct call_arg{
+  struct ctimer lifetimer;
+  int data;
+};
+
+static void print_ctimer(struct call_arg *arg)
+{
+  printf("CTIMER-CALL\n");
+  // ctimer_stop(lifetimer);
+  ctimer_restart(&arg->lifetimer);
+  // ctimer_set(lifetimer, 5000, print_ctimer, lifetimer);
+}
 
 /*---------------------------------------------------------------------------*/
 /**
@@ -584,15 +621,6 @@ proactive_probing_callback(void *ptr)
            linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1]);
     return;
   }
-}
-
-/*
-Use the packet on the head of the packet list and aggregate it with packets of same event ID
-in the queue.
-*/
-static void aggregate_queue(struct collect_conn *c)
-{
-
 }
 
 /*---------------------------------------------------------------------------*/
@@ -1531,6 +1559,8 @@ int collect_send(struct collect_conn *tc, int rexmits)
   struct collect_neighbor *n;
   int ret;
 
+  // struct call_arg *arg;
+
   packetbuf_set_attr(PACKETBUF_ATTR_EPACKET_ID, tc->eseqno);
 
   /* Increase the sequence number for the packet we send out. We
@@ -1551,7 +1581,7 @@ int collect_send(struct collect_conn *tc, int rexmits)
   packetbuf_set_attr(PACKETBUF_ATTR_HOPS, 1);
 
   packetbuf_set_attr(PACKETBUF_ATTR_TTL, MAX_HOPLIM);
-  
+
   if (rexmits > MAX_REXMITS)
   {
     packetbuf_set_attr(PACKETBUF_ATTR_MAX_REXMIT, MAX_REXMITS);

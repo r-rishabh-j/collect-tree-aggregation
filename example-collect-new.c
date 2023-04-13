@@ -43,14 +43,16 @@
 #include "dev/leds.h"
 #include "dev/button-sensor.h"
 #include "dev/serial-line.h"
-//#include "collect-view.h"
+// #include "collect-view.h"
 
-//#define WITH_COFFEE 0
+// #define WITH_COFFEE 0
 #include "net/netstack.h"
 
 #include <stdio.h>
 
 static struct collect_conn tc;
+struct call_arg lifetimer_st;
+
 
 /*---------------------------------------------------------------------------*/
 PROCESS(example_collect_process, "Test collect process");
@@ -60,130 +62,91 @@ static void
 recv(const linkaddr_t *originator, uint8_t seqno, uint8_t hops)
 {
   printf("Sink got message from %d.%d, seqno %d, hops %d: len %d '%s'\n",
-	 originator->u8[0], originator->u8[1],
-	 seqno, hops,
-	 packetbuf_datalen(),
-	 (char *)packetbuf_dataptr());
+         originator->u8[0], originator->u8[1],
+         seqno, hops,
+         packetbuf_datalen(),
+         (char *)packetbuf_dataptr());
 }
 /*---------------------------------------------------------------------------*/
-static const struct collect_callbacks callbacks = { recv };
+static const struct collect_callbacks callbacks = {recv};
+
+struct call_arg{
+  struct ctimer lifetimer;
+  int data;
+};
+
+static void print_ctimer(struct call_arg *arg)
+{
+  printf("CTIMER-CALL  %d\n", arg->data);
+  // ctimer_stop(lifetimer);
+  ctimer_restart(&arg->lifetimer);
+  // ctimer_set(lifetimer, 5000, print_ctimer, lifetimer);
+}
+
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(example_collect_process, ev, data)
 {
-//	printf("hi\n");
-	static struct etimer periodic;
-	static struct etimer et;
-	PROCESS_BEGIN();
+  //	printf("hi\n");
+  static struct etimer periodic;
+  static struct etimer et;
+  PROCESS_BEGIN();
 
-/*
-
-//power on
- serial_shell_init();
- shell_blink_init();
-
-#if WITH_COFFEE
-  shell_file_init();
-  shell_coffee_init();
-#endif /* WITH_COFFEE */
-/*
-  /* shell_download_init(); */
-  /* shell_rime_sendcmd_init(); */
-  /* shell_ps_init(); */
-/*
-  shell_reboot_init();
-  shell_rime_init();
-  shell_rime_netcmd_init();*/
-  /* shell_rime_ping_init(); */
-  /* shell_rime_debug_init(); */
-  /* shell_rime_debug_runicast_init(); */
- // shell_powertrace_init();
-  /* shell_base64_init(); */
- // shell_text_init();
-  //shell_time_init();
-  /* shell_checkpoint_init(); */
-  /* shell_sendtest_init(); */
-/*
-#if CONTIKI_TARGET_SKY
-  shell_sky_init();
-#endif /* CONTIKI_TARGET_SKY */
-/*
-  shell_collect_view_init();
-//power off
-*/
   collect_open(&tc, 130, COLLECT_ROUTER, &callbacks);
-  if(linkaddr_node_addr.u8[0] == 1 &&
-     linkaddr_node_addr.u8[1] == 0) {
-	printf("I am sink\n");
-	collect_set_sink(&tc, 1);
+  if (linkaddr_node_addr.u8[0] == 1 &&
+      linkaddr_node_addr.u8[1] == 0)
+  {
+    printf("I am sink\n");
+    collect_set_sink(&tc, 1);
   }
   /* Allow some time for the network to settle. */
   etimer_set(&et, 0 * CLOCK_SECOND);
   PROCESS_WAIT_UNTIL(etimer_expired(&et));
-  while(1) {
-	
+
+  lifetimer_st.data=linkaddr_node_addr.u8[0];
+  ctimer_set(&lifetimer_st.lifetimer, 1000, print_ctimer, &lifetimer_st);
+
+  while (1)
+  {
+
     /* Send a packet every 30 seconds. */
-  /*  if(etimer_expired(&periodic)) {
-     etimer_set(&periodic, CLOCK_SECOND * 30);
-     etimer_set(&et, random_rand() % (CLOCK_SECOND * 30));
-    }*/
+    /*  if(etimer_expired(&periodic)) {
+       etimer_set(&periodic, CLOCK_SECOND * 30);
+       etimer_set(&et, random_rand() % (CLOCK_SECOND * 30));
+      }*/
     PROCESS_WAIT_EVENT();
-		/*****************************************************************************/
-		if(ev == serial_line_event_message && data != NULL) {
-			     printf("I got the message as :-  ");
-			    char *line=NULL;
-			    line = (char *)data;
-          // int event_id = atoi
-			    printf("%s\n",line);
-			    static linkaddr_t oldparent;
-			      const linkaddr_t *parent;
-
-			      printf("Sending\n");
-			      packetbuf_clear();
-			      packetbuf_set_datalen(sprintf(packetbuf_dataptr(),
-							  "%s", line) + 1);
-			      collect_send(&tc, 15);
-
-			      parent = collect_parent(&tc);
-			      if(!linkaddr_cmp(parent, &oldparent)) {
-					if(!linkaddr_cmp(&oldparent, &linkaddr_null)) {
-					  printf("#L %d 0\n", oldparent.u8[0]);
-					}
-					if(!linkaddr_cmp(parent, &linkaddr_null)) {
-					  printf("#L %d 1\n", parent->u8[0]);
-					}
-					linkaddr_copy(&oldparent, parent);
-			      }
-
-			
-		}
-	/*****************************************************************************/
-/*
-    if(etimer_expired(&et)) {
-      static rimeaddr_t oldparent;
-      const rimeaddr_t *parent;
+    /*****************************************************************************/
+    if (ev == serial_line_event_message && data != NULL)
+    {
+      printf("I got the message as :-  ");
+      char *line = NULL;
+      line = (char *)data;
+      // int event_id = atoi
+      printf("%s\n", line);
+      static linkaddr_t oldparent;
+      const linkaddr_t *parent;
 
       printf("Sending\n");
       packetbuf_clear();
       packetbuf_set_datalen(sprintf(packetbuf_dataptr(),
-				  "%s", "Hello") + 1);*/
-  /*  else { 
-      static rimeaddr_t oldparent;
-      const rimeaddr_t *parent;
-	 collect_send(&tc, 15);
+                                    "%s", line) +
+                            1);
+      collect_send(&tc, 15);
 
       parent = collect_parent(&tc);
-      if(!rimeaddr_cmp(parent, &oldparent)) {
-        if(!rimeaddr_cmp(&oldparent, &rimeaddr_null)) {
+      if (!linkaddr_cmp(parent, &oldparent))
+      {
+        if (!linkaddr_cmp(&oldparent, &linkaddr_null))
+        {
           printf("#L %d 0\n", oldparent.u8[0]);
         }
-        if(!rimeaddr_cmp(parent, &rimeaddr_null)) {
+        if (!linkaddr_cmp(parent, &linkaddr_null))
+        {
           printf("#L %d 1\n", parent->u8[0]);
         }
-        rimeaddr_copy(&oldparent, parent);
+        linkaddr_copy(&oldparent, parent);
       }
-    }*/
+    }
+    PROCESS_END();
+  }
 }
-//	PROCESS_YIELD();		
-  PROCESS_END();
-}
-/*---------------------------------------------------------------------------*/
+  /*---------------------------------------------------------------------------*/
