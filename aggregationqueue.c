@@ -10,6 +10,11 @@ struct queueElement{
   struct queueElement* next;
 };
 
+struct ptrPair{
+  struct queueElement* head;
+  struct queueElement* newList;
+};
+
 /*---------------------------------------------------------------------------*/
 void packetqueue_init(struct packetqueue *q)
 {
@@ -199,7 +204,7 @@ struct queueElement* pushCustomQueue(struct queueElement *head,int Eid,char srcL
   return head;
 }
 
-struct queueElement* popCustomQueue(struct queueElement *head)
+struct ptrPair popCustomQueue(struct queueElement *head)
 {
   struct queueElement *newList=NULL;
 
@@ -207,7 +212,7 @@ struct queueElement* popCustomQueue(struct queueElement *head)
   
   while(ptr!=NULL)
   {
-    long currentTime;
+    long currentTime=4;
     if(ptr->expirationTIme<=currentTime)
     {
       if(ptr==head)
@@ -235,4 +240,10 @@ struct queueElement* popCustomQueue(struct queueElement *head)
       ptr=ptr->next;
     }
   }
+
+  struct ptrPair toRet;
+  toRet.head=head;
+  toRet.newList=newList;
+  
+  return toRet;
 }
