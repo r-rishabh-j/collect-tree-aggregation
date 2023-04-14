@@ -181,6 +181,8 @@ struct queueElement* pushCustomQueue(struct queueElement *head,int Eid,char srcL
     head->prev=NULL;
     head->next=NULL;
     head->expirationTIme=expirationTime;
+    head->Eid=Eid;
+    sprintf(head->srcList,"%s",srcList);
     return head;
   }
 
@@ -192,7 +194,8 @@ struct queueElement* pushCustomQueue(struct queueElement *head,int Eid,char srcL
   newHead->next=head;
   newHead->expirationTIme=expirationTime;
   head = newHead;
-
+  head->Eid=Eid;
+  sprintf(head->srcList,"%s",srcList);
   return head;
 }
 
