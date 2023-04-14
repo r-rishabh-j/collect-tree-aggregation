@@ -1,9 +1,11 @@
 #include "sys/ctimer.h"
 #include "packetqueue.h"
 
+
 struct queueElement{
   int Eid;
   char srcList[100];
+  long expirationTIme;
   struct queueElement* prev;
   struct queueElement* next;
 };
@@ -138,6 +140,12 @@ struct queueElement* aggregateCustomQueue(struct queueElement *head)
         //making a bigger source list.
         sprintf(ptr->srcList,"%s,%s",ptr->srcList,it->srcList);
         
+        // updating the expiration time 
+        if(ptr->expirationTIme<it->expirationTIme)
+        {
+          ptr->expirationTIme=it->expirationTIme;
+        }
+
         // we need to delete this element now.
         struct queueElement* toDel=it;
 
@@ -164,7 +172,7 @@ struct queueElement* aggregateCustomQueue(struct queueElement *head)
   return head;
 }
 
-struct queueElement* pushCustomQueue(struct queueElement *head,int Eid,char srcList[100])
+struct queueElement* pushCustomQueue(struct queueElement *head,int Eid,char srcList[100],long expirationTime)
 {
   if(head==NULL)
   {
@@ -172,6 +180,7 @@ struct queueElement* pushCustomQueue(struct queueElement *head,int Eid,char srcL
     head = (struct queueElement *)malloc(sizeof(struct queueElement));
     head->prev=NULL;
     head->next=NULL;
+    head->expirationTIme=expirationTime;
     return head;
   }
 
@@ -181,8 +190,46 @@ struct queueElement* pushCustomQueue(struct queueElement *head,int Eid,char srcL
   newHead->prev = NULL;
   head->prev = newHead;
   newHead->next=head;
-
+  newHead->expirationTIme=expirationTime;
   head = newHead;
 
   return head;
+}
+
+struct queueElement* popCustomQueue(struct queueElement *head)
+{
+  struct queueElement *newList=NULL;
+
+  struct queueElement *ptr=head;
+  
+  while(ptr!=NULL)
+  {
+    long currentTime;
+    if(ptr->expirationTIme<=currentTime)
+    {
+      if(ptr==head)
+      {
+        head=head->next;
+      }
+      else
+      {
+        ptr->prev->next=ptr->next;
+        ptr->next->prev=ptr->prev;
+      }
+      struct queueElement *toGoNext=ptr->next;
+      ptr->next=newList;
+      ptr->prev=NULL;
+      if(newList!=NULL)
+      {
+        newList->prev=ptr;
+      }
+      newList=ptr;
+
+      ptr=toGoNext;
+    }
+    else
+    {
+      ptr=ptr->next;
+    }
+  }
 }
