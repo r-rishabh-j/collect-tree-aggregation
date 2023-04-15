@@ -39,20 +39,19 @@
 #include "contiki.h"
 #include "lib/random.h"
 #include "net/rime/rime.h"
-#include "net/rime/collect.h"
+#include "./collect.h"
 #include "dev/leds.h"
 #include "dev/button-sensor.h"
 #include "dev/serial-line.h"
-// #include "collect-view.h"
-
-// #define WITH_COFFEE 0
+// #include "aggregationqueue.c"
 #include "net/netstack.h"
 
 #include <stdio.h>
 
 static struct collect_conn tc;
-struct call_arg lifetimer_st;
+// struct call_arg lifetimer_st;
 
+struct ctimer aggregation_timer;
 
 /*---------------------------------------------------------------------------*/
 PROCESS(example_collect_process, "Test collect process");
@@ -61,92 +60,87 @@ AUTOSTART_PROCESSES(&example_collect_process);
 static void
 recv(const linkaddr_t *originator, uint8_t seqno, uint8_t hops)
 {
-  printf("Sink got message from %d.%d, seqno %d, hops %d: len %d '%s'\n",
-         originator->u8[0], originator->u8[1],
-         seqno, hops,
-         packetbuf_datalen(),
-         (char *)packetbuf_dataptr());
+    char *dt = packetbuf_dataptr();
+    printf("PRINTING ");
+    int i = 0;
+    for (i = 0; i < packetbuf_datalen(); i++)
+    {
+        printf("'%c'", dt[i]);
+    }
+    printf("\n");
+    printf("Sink got message from %d.%d, seqno %d, hops %d: len %d '%s'\n",
+           originator->u8[0], originator->u8[1],
+           seqno, hops,
+           packetbuf_datalen(),
+           (char *)packetbuf_dataptr());
 }
 /*---------------------------------------------------------------------------*/
 static const struct collect_callbacks callbacks = {recv};
 
-struct call_arg{
-  struct ctimer lifetimer;
-  int data;
-};
-
-static void print_ctimer(struct call_arg *arg)
-{
-  printf("CTIMER-CALL  %d\n", arg->data);
-  // ctimer_stop(lifetimer);
-  ctimer_restart(&arg->lifetimer);
-  // ctimer_set(lifetimer, 5000, print_ctimer, lifetimer);
-}
+// static void print_ctimer(struct call_arg *arg)
+// {
+//     printf("CTIMER-CALL  %d\n", arg->data);
+//     // ctimer_stop(lifetimer);
+//     ctimer_restart(&arg->lifetimer);
+//     // ctimer_set(lifetimer, 5000, print_ctimer, lifetimer);
+// }
 
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(example_collect_process, ev, data)
 {
-  //	printf("hi\n");
-  static struct etimer periodic;
-  static struct etimer et;
-  PROCESS_BEGIN();
+    static struct etimer periodic;
+    static struct etimer et;
+    PROCESS_BEGIN();
 
-  collect_open(&tc, 130, COLLECT_ROUTER, &callbacks);
-  if (linkaddr_node_addr.u8[0] == 1 &&
-      linkaddr_node_addr.u8[1] == 0)
-  {
-    printf("I am sink\n");
-    collect_set_sink(&tc, 1);
-  }
-  /* Allow some time for the network to settle. */
-  etimer_set(&et, 0 * CLOCK_SECOND);
-  PROCESS_WAIT_UNTIL(etimer_expired(&et));
-
-  lifetimer_st.data=linkaddr_node_addr.u8[0];
-  ctimer_set(&lifetimer_st.lifetimer, 1000, print_ctimer, &lifetimer_st);
-
-  while (1)
-  {
-
-    /* Send a packet every 30 seconds. */
-    /*  if(etimer_expired(&periodic)) {
-       etimer_set(&periodic, CLOCK_SECOND * 30);
-       etimer_set(&et, random_rand() % (CLOCK_SECOND * 30));
-      }*/
-    PROCESS_WAIT_EVENT();
-    /*****************************************************************************/
-    if (ev == serial_line_event_message && data != NULL)
+    collect_open(&tc, 130, COLLECT_ROUTER, &callbacks);
+    if (linkaddr_node_addr.u8[0] == 1 &&
+        linkaddr_node_addr.u8[1] == 0)
     {
-      printf("I got the message as :-  ");
-      char *line = NULL;
-      line = (char *)data;
-      // int event_id = atoi
-      printf("%s\n", line);
-      static linkaddr_t oldparent;
-      const linkaddr_t *parent;
-
-      printf("Sending\n");
-      packetbuf_clear();
-      packetbuf_set_datalen(sprintf(packetbuf_dataptr(),
-                                    "%s", line) +
-                            1);
-      collect_send(&tc, 15);
-
-      parent = collect_parent(&tc);
-      if (!linkaddr_cmp(parent, &oldparent))
-      {
-        if (!linkaddr_cmp(&oldparent, &linkaddr_null))
-        {
-          printf("#L %d 0\n", oldparent.u8[0]);
-        }
-        if (!linkaddr_cmp(parent, &linkaddr_null))
-        {
-          printf("#L %d 1\n", parent->u8[0]);
-        }
-        linkaddr_copy(&oldparent, parent);
-      }
+        printf("I am sink\n");
+        collect_set_sink(&tc, 1);
     }
-    PROCESS_END();
-  }
+    /* Allow some time for the network to settle. */
+    etimer_set(&et, 0 * CLOCK_SECOND);
+    PROCESS_WAIT_UNTIL(etimer_expired(&et));
+
+    // ctimer_set(&aggregation_timer, 1000, aggregationCaller, &aggregation_timer);
+
+    while (1)
+    {
+        PROCESS_WAIT_EVENT();
+        /*****************************************************************************/
+        if (ev == serial_line_event_message && data != NULL)
+        {
+            printf("I got the message as:");
+            char *line = NULL;
+            line = (char *)data;
+            printf("%s\n", line);
+            static linkaddr_t oldparent;
+            const linkaddr_t *parent;
+
+            printf("Sending\n");
+            packetbuf_clear();
+            
+            packetbuf_set_datalen(sprintf(packetbuf_dataptr(),
+                                          "%s|%d", line, linkaddr_node_addr.u8[0]) +
+                                  1);
+            collect_send(&tc, 15);
+
+            parent = collect_parent(&tc);
+            if (!linkaddr_cmp(parent, &oldparent))
+            {
+                if (!linkaddr_cmp(&oldparent, &linkaddr_null))
+                {
+                    printf("#L %d 0\n", oldparent.u8[0]);
+                }
+                if (!linkaddr_cmp(parent, &linkaddr_null))
+                {
+                    printf("#L %d 1\n", parent->u8[0]);
+                }
+                linkaddr_copy(&oldparent, parent);
+            }
+        }
+        PROCESS_END();
+    }
 }
-  /*---------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------*/

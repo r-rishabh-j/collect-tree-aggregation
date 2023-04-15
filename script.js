@@ -12,77 +12,77 @@ var s_time = [];
 var e_time = [];
 var summ = [];
 var count_elem = [];
-while(count > 0) {
-    if (msg.contains("Starting") ) {
-        log.log("New Mote Found \n");
-        arr[id-1] = mote;
-        log.log ("Nodes " + id + "at : " + arr[id-1].getInterfaces().getPosition().getXCoordinate() + " , " + arr[id-1].getInterfaces().getPosition().getYCoordinate() + "\n" );
-	msg = "Co-ord at : " + arr[id-1].getInterfaces().getPosition().getXCoordinate() + " " + arr[id-1].getInterfaces().getPosition().getYCoordinate();
-        write(mote,msg);
-	count = count - 1;
-     }
+while (count > 0) {
+	if (msg.contains("Starting")) {
+		log.log("New Mote Found \n");
+		arr[id - 1] = mote;
+		log.log("Nodes " + id + "at : " + arr[id - 1].getInterfaces().getPosition().getXCoordinate() + " , " + arr[id - 1].getInterfaces().getPosition().getYCoordinate() + "\n");
+		msg = "Co-ord at : " + arr[id - 1].getInterfaces().getPosition().getXCoordinate() + " " + arr[id - 1].getInterfaces().getPosition().getYCoordinate();
+		// write(mote,msg);
+		count = count - 1;
+	}
 	YIELD();
-} 
-log.log("******\n");
-for ( var i = 0; i < allm.length; i++ ) {
-	log.log ("Nodes " + i+1 + "at : " + arr[i].getInterfaces().getPosition().getXCoordinate() + " , " + arr[i].getInterfaces().getPosition().getYCoordinate() + "\n" );
-	
 }
 log.log("******\n");
-var cc = 4;
+for (var i = 0; i < allm.length; i++) {
+	log.log("Nodes " + i + 1 + "at : " + arr[i].getInterfaces().getPosition().getXCoordinate() + " , " + arr[i].getInterfaces().getPosition().getYCoordinate() + "\n");
+
+}
+log.log("******\n");
+var cc = 40;
 
 
-while(cc > 0) { 
+while (cc > 0) {
 	var refer_msg = msg;
-	cc  = cc -1;
+	cc = cc - 1;
 	var x_size = 20;  // max horizontal length
-
 	var y_size = 20;	// max vertical length
-	var k = Math.floor((Math.random()* ref.length));
-	var radius = range[Math.floor((Math.random()* range.length))];
-	
+	// var k = Math.floor((Math.random()* ref.length));
+	var radius = range[Math.floor((Math.random() * range.length))];
+
 	var refer_msg = msg;
 	if (refer_msg.contains("Sink got message")) {
 		var p = refer_msg.split("'");
 		var f = p[1];
 		var res = f.split(":");
-		log.log ("Event Id : " + res[0] + "\n" );
+		log.log("Event Id : " + res[0] + "\n");
 		var pos = Number(res[0]);
 		var cur_date = new Date();
-		e_time[pos] = 	time;
+		e_time[pos] = time;
 		summ[pos] = summ[pos] + e_time[pos];
 		count_elem[pos] = count_elem[pos] + 1;
-		for ( var u = 0 ; u < ctr ; u++) {
-			  log.log("Eid : " + u + " :  ST -> " + s_time[u] + " ET -> " + e_time[u] + " " + summ[u] + " " + count_elem[u] + " \n");
-		} 			
+		for (var u = 0; u < ctr; u++) {
+			log.log("Eid : " + u + " :  ST -> " + s_time[u] + " ET -> " + e_time[u] + " " + summ[u] + " " + count_elem[u] + " \n");
+		}
 	}
 
-	msg = ctr + ":" + ref[k]; // generating a message
-	
+	// msg = ctr + ":" + ref[k]; // generating a message
+	msg = "ID:" + ctr; // generating a message
+
 
 	var p = 5000000;
-	while (p > 0 ) {
-		p = p -1;
+	while (p > 0) {
+		p = p - 1;
 	}
 	var flag = 0;
 	//WAIT_UNTIL (msg.equals(ref[k]));
 	var x = Math.floor((Math.random() * x_size));  // 
 	var y = Math.floor((Math.random() * y_size));  // generate event at x,y 
-   // x = 20;   // in case you want to fix the location of event
-   // y = 20;   
+	// x = 20;   // in case you want to fix the location of event
+	// y = 20;   
 
-	log.log("Event : " + msg + " was generated on " + time +" at ( "+ x + " , " + y + " ) \n");
+	log.log("Event : " + msg + " was generated on " + time + " at ( " + x + " , " + y + " ) \n");
 	s_time[ctr] = time;  // stores the start time
 	summ[ctr] = 0;
 	count_elem[ctr] = 0;
-    ctr ++;
-	for (var i = 0 ; i < allm.length; i++) {
+	ctr++;
+	for (var i = 0; i < allm.length; i++) {
 		mote = arr[i];
 		var d_x = mote.getInterfaces().getPosition().getXCoordinate();
 		var d_y = mote.getInterfaces().getPosition().getYCoordinate();
-		var dist = Math.sqrt( (d_x - x)* (d_x - x) + (d_y - y) * (d_y - y) );
-		if ( dist <= radius) {
-			write (mote, msg);
+		var dist = Math.sqrt((d_x - x) * (d_x - x) + (d_y - y) * (d_y - y));
+		if (dist <= radius) {
+			write(mote, msg);
 			log.log("Event : " + msg + " with radius : " + radius + " sensed by mote Number : " + i + "'\n");
 			flag = 1;
 		}
@@ -93,7 +93,7 @@ while(cc > 0) {
 	YIELD();
 }
 
-while(1 > 0) {
+while (1 > 0) {
 	var refer_msg = msg;
 	if (refer_msg.contains("Sink got message")) {
 		var p = refer_msg.split("'");
@@ -101,14 +101,12 @@ while(1 > 0) {
 		var res = f.split(":");
 		var pos = Number(res[0]);
 		var cur_date = new Date();
-		e_time[pos] = 	time; 
+		e_time[pos] = time;
 		summ[pos] = summ[pos] + time;
-		count_elem[pos] = count_elem[pos] + 1 ;
-		for ( var u = 0 ; u < ctr ; u++) {
-			  log.log("Eid : " + u + " " + s_time[u] + " " + e_time[u] + "  " + summ[u] + " " + count_elem[u] + " final : " + (summ[u] - (count_elem[u]*s_time[u]))/count_elem[u] + "\n");
-
-				
-		} 			
+		count_elem[pos] = count_elem[pos] + 1;
+		for (var u = 0; u < ctr; u++) {
+			log.log("Eid : " + u + " " + s_time[u] + " " + e_time[u] + "  " + summ[u] + " " + count_elem[u] + " final : " + (summ[u] - (count_elem[u] * s_time[u])) / count_elem[u] + "\n");
+		}
 	}
 	YIELD();
 }
