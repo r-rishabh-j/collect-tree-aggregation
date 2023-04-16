@@ -1,13 +1,13 @@
 #include "sys/ctimer.h"
 #include "packetqueue.h"
-#include <unistd.h>
-#include <sys/time.h>
+#include "sys/clock.h"
+#include "contiki.h"
 
 
 struct queueElement{
   int Eid;
   char srcList[100];
-  long expirationTIme;
+  uint32_t expirationTIme;
   struct queueElement* prev;
   struct queueElement* next;
   struct queuebuf* q;
@@ -189,14 +189,11 @@ void aggregateCustomQueue(struct queueElement **Head)
 struct queueElement* pushCustomQueue(struct queueElement *head,int Eid,char srcList[100],long expirationTime,struct queuebuf* q)
 {
 
-  struct timeval  tv;
-  gettimeofday(&tv, NULL);
-
-  double time_in_mill = (tv.tv_sec) * 1000 + (tv.tv_usec) / 1000 ; // convert tv_sec & tv_usec to millisecond
+  uint32_t time_in_mill = clock_time() * (1000 / CLOCK_SECOND);
 
   // adding the expiration time to current time in miliseconds
   expirationTime+=time_in_mill;
-  
+
   if(head==NULL)
   {
     // inserting the first element into the queue
@@ -233,11 +230,7 @@ struct ptrPair popCustomQueue(struct queueElement *head)
   while(ptr!=NULL)
   {
 
-    struct timeval  tv;
-    gettimeofday(&tv, NULL);
-
-    double time_in_mill = (tv.tv_sec) * 1000 + (tv.tv_usec) / 1000 ; // convert tv_sec & tv_usec to millisecond
-
+    uint32_t time_in_mill = clock_time() * (1000 / CLOCK_SECOND);
 
     // current time in miliseconds
     long currentTime=time_in_mill;
