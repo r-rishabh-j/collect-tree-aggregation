@@ -1,5 +1,7 @@
 #include "sys/ctimer.h"
 #include "packetqueue.h"
+#include <unistd.h>
+#include <sys/time.h>
 
 
 struct queueElement{
@@ -148,10 +150,15 @@ void aggregateCustomQueue(struct queueElement **Head)
         sprintf(ptr->srcList,"%s,%s",ptr->srcList,it->srcList);
         
         // updating the expiration time 
-        if(ptr->expirationTIme<it->expirationTIme)
+        if(ptr->expirationTIme>it->expirationTIme)
         {
           ptr->expirationTIme=it->expirationTIme;
+
+          // overwriting the queue pointer
+          ptr->q=it->q;
         }
+
+
 
         // we need to delete this element now.
         struct queueElement* toDel=it;
@@ -181,6 +188,15 @@ void aggregateCustomQueue(struct queueElement **Head)
 
 struct queueElement* pushCustomQueue(struct queueElement *head,int Eid,char srcList[100],long expirationTime,struct queuebuf* q)
 {
+
+  struct timeval  tv;
+  gettimeofday(&tv, NULL);
+
+  double time_in_mill = (tv.tv_sec) * 1000 + (tv.tv_usec) / 1000 ; // convert tv_sec & tv_usec to millisecond
+
+  // adding the expiration time to current time in miliseconds
+  expirationTime+=time_in_mill;
+  
   if(head==NULL)
   {
     // inserting the first element into the queue
@@ -216,7 +232,16 @@ struct ptrPair popCustomQueue(struct queueElement *head)
   
   while(ptr!=NULL)
   {
-    long currentTime=4;
+
+    struct timeval  tv;
+    gettimeofday(&tv, NULL);
+
+    double time_in_mill = (tv.tv_sec) * 1000 + (tv.tv_usec) / 1000 ; // convert tv_sec & tv_usec to millisecond
+
+
+    // current time in miliseconds
+    long currentTime=time_in_mill;
+
     if(ptr->expirationTIme<=currentTime)
     {
       if(ptr==head)
