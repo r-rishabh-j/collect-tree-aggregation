@@ -220,4 +220,4 @@ void *packetqueue_ptr(struct packetqueue_item *i);
 
 /** @} */
 /** @} */
-static void remove_queued_packet(void *item);
+//static void remove_queued_packet(void *item);

@@ -55,6 +55,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include "aggregationqueue.c"
+#include <stdlib.h>
 // #include "packetqueue.h"
 
 static const struct packetbuf_attrlist attributes[] =
@@ -238,6 +239,8 @@ static void aggregationCaller()
     aggregateCustomQueue(&aggregation_head);
     ctimer_restart(&aggregation_timer);
 }
+
+void add_packet_to_recent_packets(struct collect_conn *tc);
 
 static push_to_packetqueue(struct collect_conn *tc)
 {   
@@ -1111,51 +1114,51 @@ void add_packet_to_recent_packets(struct collect_conn *tc)
     }
 }
 /*---------------------------------------------------------------------------*/
-static void push_to_main_pkt_queue(struct collect_conn *tc)
-{
-    if (packetqueue_len(&tc->send_queue) <= MAX_SENDING_QUEUE - MIN_AVAILABLE_QUEUE_ENTRIES)
-    {
-        add_packet_to_recent_packets(tc);
-        // send_ack(tc, &ack_to, ackflags);
-        printf("SENDING\n");
-        send_queued_packet(tc);
+// static void push_to_main_pkt_queue(struct collect_conn *tc)
+// {
+//     if (packetqueue_len(&tc->send_queue) <= MAX_SENDING_QUEUE - MIN_AVAILABLE_QUEUE_ENTRIES)
+//     {
+//         add_packet_to_recent_packets(tc);
+//         // send_ack(tc, &ack_to, ackflags);
+//         printf("SENDING\n");
+//         send_queued_packet(tc);
 
-        struct packetqueue_item *i;
+//         struct packetqueue_item *i;
 
-        /* Allocate a memory block to hold the packet queue item. */
-        struct packetqueue *q = &tc->send_queue;
-        i = memb_alloc(q->memb);
+//         /* Allocate a memory block to hold the packet queue item. */
+//         struct packetqueue *q = &tc->send_queue;
+//         i = memb_alloc(q->memb);
 
-        if (i == NULL)
-        {
-            return 0;
-        }
+//         if (i == NULL)
+//         {
+//             return 0;
+//         }
 
-        /* Allocate a queuebuf and copy the contents of the packetbuf into it. */
-        i->buf = queuebuf_new_from_packetbuf();
+//         /* Allocate a queuebuf and copy the contents of the packetbuf into it. */
+//         i->buf = queuebuf_new_from_packetbuf();
 
-        if (i->buf == NULL)
-        {
-            memb_free(q->memb, i);
-            return 0;
-        }
+//         if (i->buf == NULL)
+//         {
+//             memb_free(q->memb, i);
+//             return 0;
+//         }
 
-        i->queue = q;
-        i->ptr = tc;
+//         i->queue = q;
+//         i->ptr = tc;
 
-        /* Setup a ctimer that removes the packet from the queue when its
-            lifetime expires. If the lifetime is zero, we do not set a
-            lifetimer. */
-        clock_time_t lifetime = FORWARD_PACKET_LIFETIME_BASE * packetbuf_attr(PACKETBUF_ATTR_MAX_REXMIT);
-        if (lifetime > 0)
-        {
-            ctimer_set(&i->lifetimer, lifetime, remove_queued_packet, i);
-        }
+//         /* Setup a ctimer that removes the packet from the queue when its
+//             lifetime expires. If the lifetime is zero, we do not set a
+//             lifetimer. */
+//         clock_time_t lifetime = FORWARD_PACKET_LIFETIME_BASE * packetbuf_attr(PACKETBUF_ATTR_MAX_REXMIT);
+//         if (lifetime > 0)
+//         {
+//             ctimer_set(&i->lifetimer, lifetime, remove_queued_packet, i);
+//         }
 
-        /* Add the item to the queue. */
-        list_add(*q->list, i);
-    }
-}
+//         /* Add the item to the queue. */
+//         list_add(*q->list, i);
+//     }
+// }
 /*---------------------------------------------------------------------------*/
 static void
 node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
@@ -1332,7 +1335,7 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
             printf("MOTE-LIST: %s\n", mote_list);
             struct queuebuf *q = queuebuf_new_from_packetbuf();
 
-            long exp_time = 1000;
+            long exp_time = 5000;
             if (q != NULL)
             {   
                 printf("PUSHING TO AGG QUEUE\n");
@@ -1619,7 +1622,7 @@ void collect_open(struct collect_conn *tc, uint16_t channels,
     collect_neighbor_init();
     /*CTIMER FOR QUEUE AGGREGATION*/
     ctimer_set(&aggregation_timer, AGGREGATION_INTERVAL, aggregationCaller, NULL);
-    ctimer_set(&aggregation_timer, POP_INTERVAL, popAggregationQueueCaller, tc);
+    ctimer_set(&pop_timer, POP_INTERVAL, popAggregationQueueCaller, tc);
 
 #if !COLLECT_ANNOUNCEMENTS
     neighbor_discovery_open(&tc->neighbor_discovery_conn, channels,
