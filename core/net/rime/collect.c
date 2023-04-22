@@ -56,6 +56,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include "aggregationqueue.c"
+#include <stdlib.h>
 // #include "packetqueue.h"
 
 static const struct packetbuf_attrlist attributes[] =
@@ -1344,7 +1345,7 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
             printf("MOTE-LIST: %s\n", mote_list);
             struct queuebuf *q = queuebuf_new_from_packetbuf();
 
-            long exp_time = 100;
+            long exp_time = 200;
             if (q != NULL)
             {
                 printf("PUSHING TO AGG QUEUE\n");
@@ -1632,7 +1633,7 @@ void collect_open(struct collect_conn *tc, uint16_t channels,
     collect_neighbor_init();
     /*CTIMER FOR QUEUE AGGREGATION*/
     ctimer_set(&aggregation_timer, AGGREGATION_INTERVAL, aggregationCaller, NULL);
-    ctimer_set(&pop_timer, POP_INTERVAL, popAggregationQueueCaller, (void*)tc);
+    ctimer_set(&pop_timer, POP_INTERVAL, popAggregationQueueCaller, tc);
 
 #if !COLLECT_ANNOUNCEMENTS
     neighbor_discovery_open(&tc->neighbor_discovery_conn, channels,

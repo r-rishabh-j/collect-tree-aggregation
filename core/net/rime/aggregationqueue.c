@@ -2,6 +2,8 @@
 #include "packetqueue.h"
 #include "sys/clock.h"
 #include "contiki.h"
+#include <stdlib.h>
+#include <stdio.h>
 
 struct queueElement
 {
@@ -134,6 +136,18 @@ struct queueElement *popCustomQueue(struct queueElement **Head)
 
   struct queueElement *head = *Head;
   struct queueElement *ptr = head;
+
+
+  printf("POP custom queue called");
+
+  if(head==NULL)
+  {
+    printf("And the queue is empty");
+  }
+  else
+  {
+    printf("And the queue is not empty");
+  }
 
   while (ptr != NULL)
   {

@@ -29,14 +29,14 @@ for (var i = 0; i < allm.length; i++) {
 
 }
 log.log("******\n");
-var cc = 40;
+var cc = 1000;
 
 
 while (cc > 0) {
 	var refer_msg = msg;
 	cc = cc - 1;
-	var x_size = 60;  // max horizontal length
-	var y_size = 60;	// max vertical length
+	var x_size = 100;  // max horizontal length
+	var y_size = 100;	// max vertical length
 	// var k = Math.floor((Math.random()* ref.length));
 	var radius = range[Math.floor((Math.random() * range.length))];
 
