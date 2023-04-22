@@ -150,7 +150,7 @@ enum {
 
 
 void collect_open(struct collect_conn *c, uint16_t channels,
-                  uint8_t is_router,
+                  uint8_t is_router, int mote_id,
                   const struct collect_callbacks *callbacks);
 void collect_close(struct collect_conn *c);
 
