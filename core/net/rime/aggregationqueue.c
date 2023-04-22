@@ -32,14 +32,18 @@ void aggregateCustomQueue(struct queueElement **Head)
     {
       if (it->Eid == ptr->Eid)
       {
+<<<<<<< HEAD
 
         printf("PKT AGGREGATED");
+=======
+        printf("FOUND!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+>>>>>>> 314b27a6fb1b2d5ee44d09099e3098a93c4171bc
         // saving the ptr information for que buff and headers that are to be freed
         struct queuebuf *toFreeq = it->q;
         struct data_msg_hdr *toFreeHdr = it->hdr_data;
 
         // making a bigger source list.
-        sprintf(ptr->srcList, "%s,%s", ptr->srcList, it->srcList);
+        sprintf(ptr->srcList, "%s##%s", ptr->srcList, it->srcList);
 
         // updating the expiration time
         if (ptr->expirationTIme > it->expirationTIme)
