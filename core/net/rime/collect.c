@@ -240,7 +240,8 @@ static void aggregationCaller()
 }
 
 static push_to_packetqueue(struct collect_conn *tc)
-{
+{   
+    printf("PUSHTOPKT\n");
     if (packetqueue_len(&tc->send_queue) <= MAX_SENDING_QUEUE - MIN_AVAILABLE_QUEUE_ENTRIES &&
         packetqueue_enqueue_packetbuf(&tc->send_queue,
                                       FORWARD_PACKET_LIFETIME_BASE *
@@ -1328,7 +1329,7 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
             printf("EVENT-ID - %d ", id);
             char mote_list[100];
             get_mote_list(dataptr, mote_list);
-            printf("MOTE-LIST: %s", mote_list);
+            printf("MOTE-LIST: %s\n", mote_list);
             struct queuebuf *q = queuebuf_new_from_packetbuf();
 
             long exp_time = 1000;
