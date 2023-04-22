@@ -208,7 +208,7 @@ struct
 
 /* Debug definition: draw routing tree in Cooja. */
 #define DRAW_TREE 0
-#define DEBUG 0
+#define DEBUG 1
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -225,26 +225,60 @@ static void set_keepalive_timer(struct collect_conn *c);
 /*---------------------------------------------------------------------------*/
 struct queueElement *aggregation_head = NULL;
 struct ctimer aggregation_timer;
+struct ctimer pop_timer;
 
 /*---------------------------------------------------------------------------*/
-// // aggregation functions
-// // ID:<event_id>|mote_id1, mote_id2, ...
-// void aggregate_buffer(char *a, char *b, char *out)
-// {
-//     // char* token_a = strtok(a, "|");
-//     // char* token_b = strtok(b, "|");
-//     // char *list_a = strchr(a, '|') + 1;
-//     char *list_b = strchr(b, '|') + 1;
-//     sprintf(out, "%s,%s", a, list_b);
-// }
 
 #define AGGREGATION_INTERVAL 1000
+#define POP_INTERVAL 1000
 
 static void aggregationCaller()
 {
     printf("AGGREGATING\n");
     aggregateCustomQueue(&aggregation_head);
     ctimer_restart(&aggregation_timer);
+}
+
+static push_to_packetqueue(struct collect_conn *tc)
+{
+    if (packetqueue_len(&tc->send_queue) <= MAX_SENDING_QUEUE - MIN_AVAILABLE_QUEUE_ENTRIES &&
+        packetqueue_enqueue_packetbuf(&tc->send_queue,
+                                      FORWARD_PACKET_LIFETIME_BASE *
+                                          packetbuf_attr(PACKETBUF_ATTR_MAX_REXMIT),
+                                      tc))
+    {
+        add_packet_to_recent_packets(tc);
+        printf("SENDING\n");
+        send_queued_packet(tc);
+    }
+    // else
+    // {
+    //     send_ack(tc, &ack_to, ackflags | ACK_FLAGS_DROPPED | ACK_FLAGS_CONGESTED);
+    //     PRINTF("%d.%d: packet dropped: no queue buffer available\n",
+    //            linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1]);
+    //     stats.qdrop++;
+    // }
+}
+
+static void popAggregationQueueCaller(struct collect_conn *tc)
+{
+    printf("POP\n");
+    struct queueElement *popped = popCustomQueue(&aggregation_head);
+    struct queuebuf *q = queuebuf_new_from_packetbuf();
+    while (popped != NULL)
+    {
+        packetbuf_clear();
+        queuebuf_to_packetbuf(popped->q);
+        char* dataptr=packetbuf_dataptr();
+        memcpy(dataptr, popped->hdr_data, sizeof(struct data_msg_hdr));
+        free(popped->hdr_data);
+        packetbuf_set_datalen(sprintf(packetbuf_dataptr(), "ID:%d|%s", popped->Eid, popped->srcList) + 1);
+        push_to_packetqueue(tc);
+        popped = popped->next;
+    }
+    queuebuf_to_packetbuf(q);
+
+    ctimer_restart(&pop_timer);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -776,6 +810,8 @@ send_queued_packet(struct collect_conn *c)
             memset(&hdr, 0, sizeof(hdr));
             hdr.rtmetric = c->rtmetric;
             memcpy(packetbuf_dataptr(), &hdr, sizeof(struct data_msg_hdr));
+            // packetbuf_hdralloc(sizeof(struct data_msg_hdr));
+            // memcpy(packetbuf_hdrptr(), &hdr, sizeof(struct data_msg_hdr));
 
             /* Send the packet. */
             send_packet(c, n);
@@ -881,6 +917,8 @@ retransmit_current_packet(struct collect_conn *c)
             memset(&hdr, 0, sizeof(hdr));
             hdr.rtmetric = c->rtmetric;
             memcpy(packetbuf_dataptr(), &hdr, sizeof(struct data_msg_hdr));
+            // packetbuf_hdralloc(sizeof(struct data_msg_hdr));
+            // memcpy(packetbuf_hdrptr(), &hdr, sizeof(struct data_msg_hdr));
 
             /* Send the packet. */
             send_packet(c, n);
@@ -1050,14 +1088,14 @@ send_ack(struct collect_conn *tc, const linkaddr_t *to, int flags)
     stats.acksent++;
 }
 /*---------------------------------------------------------------------------*/
-static void
+ void
 add_packet_to_recent_packets(struct collect_conn *tc)
 {
     /* Remember that we have seen this packet for later, but only if
        it has a length that is larger than zero. Packets with size
        zero are keepalive or proactive link estimate probes, so we do
        not record them in our history. */
-    if (packetbuf_datalen() > sizeof(struct data_msg_hdr))
+    if (packetbuf_datalen() > sizeof(struct data_msg_hdr)
     {
         recent_packets[recent_packet_ptr].eseqno =
             packetbuf_attr(PACKETBUF_ATTR_EPACKET_ID);
@@ -1126,6 +1164,8 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
     // print_buf();
 
     memcpy(&hdr, packetbuf_dataptr(), sizeof(struct data_msg_hdr));
+    // memcpy(&hdr, packetbuf_hdrptr(), sizeof(struct data_msg_hdr));
+    printf("RTMETRIC: %d\n", hdr.rtmetric);
 
     /* First update the neighbors rtmetric with the information in the
        packet header. */
@@ -1245,21 +1285,22 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
             /*
             Push packet into aggregation queue
             */
-            char *dataptr = (char *)packetbuf_dataptr() + 4;
-            int id = get_event_id(dataptr);
-            printf("EVENT-ID - %d ", id);
-            char mote_list[100];
-            get_mote_list(dataptr, mote_list);
-            printf("MOTE-LIST: %s", mote_list);
-            struct queuebuf *q = queuebuf_new_from_packetbuf();
-            long exp_time = 1000;
-            if (q != NULL)
-            {
-                // // queuebuf_to_packetbuf(q);
-                // send_ack(tc, &ack_to, 0);
-                pushCustomQueue(aggregation_head, id, mote_list, exp_time, q);
-                queuebuf_free(q);
-            }
+            char *dataptr = (char *)packetbuf_dataptr()+4;
+            printf("DATAPTR- %s\n", dataptr);
+            // int id = get_event_id(dataptr);
+            // printf("EVENT-ID - %d ", id);
+            // char mote_list[100];
+            // get_mote_list(dataptr, mote_list);
+            // printf("MOTE-LIST: %s", mote_list);
+            // struct queuebuf *q = queuebuf_new_from_packetbuf();
+            // long exp_time = 1000;
+            // if (q != NULL)
+            // {
+            //     // // queuebuf_to_packetbuf(q);
+            //     // send_ack(tc, &ack_to, 0);
+            //     pushCustomQueue(aggregation_head, id, mote_list, exp_time, q);
+            //     queuebuf_free(q);
+            // }
 
             /* If we are not the sink, we forward the packet to our best
                neighbor. First, we make sure that the packet comes from a
@@ -1571,7 +1612,8 @@ void collect_open(struct collect_conn *tc, uint16_t channels,
     tc->send_queue.memb = &send_queue_memb;
     collect_neighbor_init();
     /*CTIMER FOR QUEUE AGGREGATION*/
-    ctimer_set(&aggregation_timer, AGGREGATION_INTERVAL, aggregationCaller, NULL);
+    // ctimer_set(&aggregation_timer, AGGREGATION_INTERVAL, aggregationCaller, NULL);
+    // ctimer_set(&aggregation_timer, POP_INTERVAL, popAggregationQueueCaller, tc);
 
 #if !COLLECT_ANNOUNCEMENTS
     neighbor_discovery_open(&tc->neighbor_discovery_conn, channels,

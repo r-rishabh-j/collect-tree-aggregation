@@ -3,20 +3,21 @@
 #include <unistd.h>
 #include <sys/time.h>
 
-
-struct queueElement{
+struct queueElement
+{
   int Eid;
   char srcList[100];
   long expirationTIme;
-  struct queueElement* prev;
-  struct queueElement* next;
-  struct queuebuf* q;
+  struct queueElement *prev;
+  struct queueElement *next;
+  struct queuebuf *q;
+  struct data_msg_hdr *hdr_data;
 };
+// struct ptrPair{
+//   struct queueElement* head;
 
-struct ptrPair{
-  struct queueElement* head;
-  struct queueElement* newList;
-};
+//   struct queueElement* newList;
+// };
 
 /*---------------------------------------------------------------------------*/
 // void packetqueue_init(struct packetqueue *q)
@@ -129,84 +130,82 @@ struct ptrPair{
 // /*---------------------------------------------------------------------------*/
 // /** @} */
 
-
 void aggregateCustomQueue(struct queueElement **Head)
 {
-  struct queueElement* head = *Head;
-  if(head==NULL)
+  struct queueElement *head = *Head;
+  if (head == NULL)
   {
     return;
   }
 
-  struct queueElement* ptr=head;
-  while(ptr!=NULL)
+  struct queueElement *ptr = head;
+  while (ptr != NULL)
   {
-    struct queueElement* it=ptr->next;
-    while(it!=NULL)
+    struct queueElement *it = ptr->next;
+    while (it != NULL)
     {
-      if(it->Eid==ptr->Eid)
+      if (it->Eid == ptr->Eid)
       {
-        //making a bigger source list.
-        sprintf(ptr->srcList,"%s,%s",ptr->srcList,it->srcList);
-        
-        // updating the expiration time 
-        if(ptr->expirationTIme>it->expirationTIme)
+        // making a bigger source list.
+        sprintf(ptr->srcList, "%s,%s", ptr->srcList, it->srcList);
+
+        // updating the expiration time
+        if (ptr->expirationTIme > it->expirationTIme)
         {
-          ptr->expirationTIme=it->expirationTIme;
+          ptr->expirationTIme = it->expirationTIme;
 
           // overwriting the queue pointer
-          ptr->q=it->q;
+          ptr->q = it->q;
         }
 
-
-
         // we need to delete this element now.
-        struct queueElement* toDel=it;
+        struct queueElement *toDel = it;
 
         // updating the next and previous ptrs
         it->prev->next = it->next;
-        
-        if(it->next!=NULL)
+
+        if (it->next != NULL)
         {
           it->next->prev = it->prev;
         }
-        it=it->next;
-        
+        it = it->next;
+
         // deleting the allocated memory for the current node
         free(toDel);
       }
       else
       {
-        it=it->next;
+        it = it->next;
       }
     }
-    ptr=ptr->next;
+    ptr = ptr->next;
   }
 
-  *Head=head;
+  *Head = head;
 }
 
-struct queueElement* pushCustomQueue(struct queueElement *head,int Eid,char srcList[100],long expirationTime,struct queuebuf* q)
+struct queueElement *pushCustomQueue(struct queueElement *head, int Eid, char srcList[100], long expirationTime, struct queuebuf *q, struct data_msg_hdr *hdr)
 {
 
-  struct timeval  tv;
+  struct timeval tv;
   gettimeofday(&tv, NULL);
 
-  double time_in_mill = (tv.tv_sec) * 1000 + (tv.tv_usec) / 1000 ; // convert tv_sec & tv_usec to millisecond
+  double time_in_mill = (tv.tv_sec) * 1000 + (tv.tv_usec) / 1000; // convert tv_sec & tv_usec to millisecond
 
   // adding the expiration time to current time in miliseconds
-  expirationTime+=time_in_mill;
-  
-  if(head==NULL)
+  expirationTime += time_in_mill;
+
+  if (head == NULL)
   {
     // inserting the first element into the queue
     head = (struct queueElement *)malloc(sizeof(struct queueElement));
-    head->prev=NULL;
-    head->next=NULL;
-    head->expirationTIme=expirationTime;
-    head->Eid=Eid;
-    head->q=q;
-    sprintf(head->srcList,"%s",srcList);
+    head->prev = NULL;
+    head->next = NULL;
+    head->expirationTIme = expirationTime;
+    head->Eid = Eid;
+    head->q = q;
+    head->hdr_data = hdr;
+    sprintf(head->srcList, "%s", srcList);
     return head;
   }
 
@@ -215,64 +214,62 @@ struct queueElement* pushCustomQueue(struct queueElement *head,int Eid,char srcL
   newHead = (struct queueElement *)malloc(sizeof(struct queueElement));
   newHead->prev = NULL;
   head->prev = newHead;
-  newHead->next=head;
-  newHead->expirationTIme=expirationTime;
+  newHead->next = head;
+  newHead->expirationTIme = expirationTime;
   head = newHead;
-  head->Eid=Eid;
-  head->q=q;
-  sprintf(head->srcList,"%s",srcList);
+  head->Eid = Eid;
+  head->q = q;
+  sprintf(head->srcList, "%s", srcList);
   return head;
 }
 
-struct ptrPair popCustomQueue(struct queueElement *head)
+struct queueElement *popCustomQueue(struct queueElement **Head)
 {
-  struct queueElement *newList=NULL;
+  struct queueElement *newList = NULL;
 
-  struct queueElement *ptr=head;
-  
-  while(ptr!=NULL)
+  struct queueElement *head = *Head;
+  struct queueElement *ptr = head;
+
+  while (ptr != NULL)
   {
 
-    struct timeval  tv;
+    struct timeval tv;
     gettimeofday(&tv, NULL);
 
-    double time_in_mill = (tv.tv_sec) * 1000 + (tv.tv_usec) / 1000 ; // convert tv_sec & tv_usec to millisecond
-
+    double time_in_mill = (tv.tv_sec) * 1000 + (tv.tv_usec) / 1000; // convert tv_sec & tv_usec to millisecond
 
     // current time in miliseconds
-    long currentTime=time_in_mill;
+    long currentTime = time_in_mill;
 
-    if(ptr->expirationTIme<=currentTime)
+    if (ptr->expirationTIme <= currentTime)
     {
-      if(ptr==head)
+      if (ptr == head)
       {
-        head=head->next;
+        head = head->next;
       }
       else
       {
-        ptr->prev->next=ptr->next;
-        ptr->next->prev=ptr->prev;
+        ptr->prev->next = ptr->next;
+        ptr->next->prev = ptr->prev;
       }
-      struct queueElement *toGoNext=ptr->next;
-      ptr->next=newList;
-      ptr->prev=NULL;
-      if(newList!=NULL)
+      struct queueElement *toGoNext = ptr->next;
+      ptr->next = newList;
+      ptr->prev = NULL;
+      if (newList != NULL)
       {
-        newList->prev=ptr;
+        newList->prev = ptr;
       }
-      newList=ptr;
+      newList = ptr;
 
-      ptr=toGoNext;
+      ptr = toGoNext;
     }
     else
     {
-      ptr=ptr->next;
+      ptr = ptr->next;
     }
   }
 
-  struct ptrPair toRet;
-  toRet.head=head;
-  toRet.newList=newList;
-  
-  return toRet;
+  *Head = head;
+
+  return newList;
 }
