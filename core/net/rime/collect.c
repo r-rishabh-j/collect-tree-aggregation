@@ -69,7 +69,10 @@ static const struct packetbuf_attrlist attributes[] =
    forwarded. This list is maintained to avoid forwarding duplicate
    packets. */
 #define NUM_RECENT_PACKETS 16
+
+linkaddr_t mote_address;
 int mode_id=-1;
+
 struct recent_packet
 {
     struct collect_conn *conn;
@@ -1618,7 +1621,7 @@ static const struct neighbor_discovery_callbacks neighbor_discovery_callbacks =
 #endif /* !COLLECT_ANNOUNCEMENTS */
 
 void collect_open(struct collect_conn *tc, uint16_t channels,
-                  uint8_t is_router, int moteid,
+                  uint8_t is_router, linkaddr_t address,
                   const struct collect_callbacks *cb)
 {
     unicast_open(&tc->unicast_conn, channels + 1, &unicast_callbacks);
@@ -1634,7 +1637,8 @@ void collect_open(struct collect_conn *tc, uint16_t channels,
     tc->send_queue.memb = &send_queue_memb;
     collect_neighbor_init();
     /*CTIMER FOR QUEUE AGGREGATION*/
-    mode_id=moteid;
+    mote_address = address;
+    mode_id=address.u8[0];
     ctimer_set(&aggregation_timer, AGGREGATION_INTERVAL, aggregationCaller, NULL);
     ctimer_set(&pop_timer, POP_INTERVAL, popAggregationQueueCaller, tc);
 

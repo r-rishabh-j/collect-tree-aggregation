@@ -92,7 +92,10 @@ PROCESS_THREAD(example_collect_process, ev, data)
     static struct etimer et;
     PROCESS_BEGIN();
 
-    collect_open(&tc, 130, COLLECT_ROUTER, linkaddr_node_addr.u8[0], &callbacks);
+    linkaddr_t address;
+    linkaddr_copy(&address, &linkaddr_node_addr);
+    collect_open(&tc, 130, COLLECT_ROUTER, linkaddr_node_addr, &callbacks);
+    
     if (linkaddr_node_addr.u8[0] == 1 &&
         linkaddr_node_addr.u8[1] == 0)
     {
