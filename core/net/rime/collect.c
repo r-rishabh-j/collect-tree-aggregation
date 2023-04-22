@@ -1347,7 +1347,7 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
             printf("MOTE-LIST: %s\n", mote_list);
             struct queuebuf *q = queuebuf_new_from_packetbuf();
             printf("BEFORE HE\n");
-            long exp_time = 200;
+            long exp_time = 5000;
             if (q != NULL)
             {
                 printf("PUSHING TO AGG QUEUE\n");

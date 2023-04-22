@@ -33,6 +33,7 @@ void aggregateCustomQueue(struct queueElement **Head)
       if (it->Eid == ptr->Eid)
       {
 
+        printf("PKT AGGREGATED");
         // saving the ptr information for que buff and headers that are to be freed
         struct queuebuf *toFreeq = it->q;
         struct data_msg_hdr *toFreeHdr = it->hdr_data;
@@ -138,16 +139,16 @@ struct queueElement *popCustomQueue(struct queueElement **Head)
   struct queueElement *ptr = head;
 
 
-  printf("POP custom queue called");
+  // printf("POP custom queue called");
 
-  if(head==NULL)
-  {
-    printf("And the queue is empty");
-  }
-  else
-  {
-    printf("And the queue is not empty");
-  }
+  // if(head==NULL)
+  // {
+  //   printf("And the queue is empty");
+  // }
+  // else
+  // {
+  //   printf("And the queue is not empty");
+  // }
 
   while (ptr != NULL)
   {
