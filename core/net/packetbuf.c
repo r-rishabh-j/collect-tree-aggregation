@@ -83,6 +83,11 @@ packetbuf_clear(void)
 
   packetbufptr = &packetbuf[PACKETBUF_HDR_SIZE];
   packetbuf_attr_clear();
+  int i=0;
+  int sz=(PACKETBUF_SIZE + PACKETBUF_HDR_SIZE + 3) / 4;
+  for(i=0;i<sz;i++){
+    packetbuf_aligned[i]=0;
+  }
 }
 
 void
@@ -92,6 +97,11 @@ packetbuf_clear_data(void)
   hdrptr = PACKETBUF_HDR_SIZE;
 
   packetbufptr = &packetbuf[PACKETBUF_HDR_SIZE];
+  int i=0;
+  int sz=(PACKETBUF_SIZE + PACKETBUF_HDR_SIZE + 3) / 4;
+  for(i=0;i<sz;i++){
+    packetbuf_aligned[i]=0;
+  }
 }
 /*---------------------------------------------------------------------------*/
 void

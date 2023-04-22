@@ -8,10 +8,10 @@ struct queueElement
   int Eid;
   char srcList[100];
   uint32_t expirationTIme;
-  struct queueElement* prev;
-  struct queueElement* next;
-  struct queuebuf* q;
-  struct data_msg_hdr* hdr_data;
+  struct queueElement *prev;
+  struct queueElement *next;
+  struct queuebuf *q;
+  struct data_msg_hdr *hdr_data;
 };
 
 void aggregateCustomQueue(struct queueElement **Head)
@@ -31,11 +31,10 @@ void aggregateCustomQueue(struct queueElement **Head)
       if (it->Eid == ptr->Eid)
       {
 
-
         // saving the ptr information for que buff and headers that are to be freed
-        struct queuebuf* toFreeq=it->q;
-        struct data_msg_hdr* toFreeHdr=it->hdr_data;
-        
+        struct queuebuf *toFreeq = it->q;
+        struct data_msg_hdr *toFreeHdr = it->hdr_data;
+
         // making a bigger source list.
         sprintf(ptr->srcList, "%s,%s", ptr->srcList, it->srcList);
 
@@ -50,8 +49,6 @@ void aggregateCustomQueue(struct queueElement **Head)
           // overwriting the queue pointer
           ptr->q = it->q;
           ptr->hdr_data = it->hdr_data;
-
-          
         }
 
         queuebuf_free(toFreeq);
@@ -83,15 +80,15 @@ void aggregateCustomQueue(struct queueElement **Head)
   *Head = head;
 }
 
-struct queueElement *pushCustomQueue(struct queueElement *head, int Eid, char srcList[100], long expirationTime, struct queuebuf *q, struct data_msg_hdr* hdr)
+struct queueElement *pushCustomQueue(struct queueElement *head, int Eid, char srcList[100], long expirationTime, struct queuebuf *q, struct data_msg_hdr *hdr)
 {
 
   uint32_t time_in_mill = clock_time() * (1000 / CLOCK_SECOND);
 
   // adding the expiration time to current time in miliseconds
-  expirationTime+=time_in_mill;
+  expirationTime += time_in_mill;
 
-  if(head==NULL)
+  if (head == NULL)
   {
     // inserting the first element into the queue
     head = (struct queueElement *)malloc(sizeof(struct queueElement));
@@ -118,6 +115,17 @@ struct queueElement *pushCustomQueue(struct queueElement *head, int Eid, char sr
   head->hdr_data = hdr;
   sprintf(head->srcList, "%s", srcList);
   return head;
+}
+
+int agg_list_len(struct queueElement *head)
+{
+  int len = 0;
+  while (head != NULL)
+  {
+    head = head->next;
+    len++;
+  }
+  return len;
 }
 
 struct queueElement *popCustomQueue(struct queueElement **Head)
