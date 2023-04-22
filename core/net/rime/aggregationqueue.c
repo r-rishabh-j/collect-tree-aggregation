@@ -135,7 +135,8 @@ struct queueElement *popCustomQueue(struct queueElement **Head)
     // current time in miliseconds
     long currentTime = time_in_mill;
 
-    if (ptr->expirationTIme <= currentTime)
+    // if (ptr->expirationTIme <= currentTime)
+    if (1)
     {
       if (ptr == head)
       {

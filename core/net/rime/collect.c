@@ -229,8 +229,8 @@ struct ctimer pop_timer;
 
 /*---------------------------------------------------------------------------*/
 
-#define AGGREGATION_INTERVAL 500
-#define POP_INTERVAL 800
+#define AGGREGATION_INTERVAL 5
+#define POP_INTERVAL 10
 
 static void aggregationCaller()
 {
@@ -241,7 +241,7 @@ static void aggregationCaller()
 
 static push_to_packetqueue(struct collect_conn *tc)
 {   
-    printf("PUSHTOPKT\n");
+    printf("HAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
     if (packetqueue_len(&tc->send_queue) <= MAX_SENDING_QUEUE - MIN_AVAILABLE_QUEUE_ENTRIES &&
         packetqueue_enqueue_packetbuf(&tc->send_queue,
                                       FORWARD_PACKET_LIFETIME_BASE *
@@ -283,6 +283,7 @@ static void popAggregationQueueCaller(struct collect_conn *tc)
         popped = nextPtr;
     }
     queuebuf_to_packetbuf(q);
+    queuebuf_free(q);
 
     ctimer_restart(&pop_timer);
 }
@@ -1332,7 +1333,7 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
             printf("MOTE-LIST: %s\n", mote_list);
             struct queuebuf *q = queuebuf_new_from_packetbuf();
 
-            long exp_time = 1000;
+            long exp_time = 1;
             if (q != NULL)
             {   
                 printf("PUSHING TO AGG QUEUE\n");
