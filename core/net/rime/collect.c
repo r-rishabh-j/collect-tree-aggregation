@@ -208,7 +208,7 @@ struct
 
 /* Debug definition: draw routing tree in Cooja. */
 #define DRAW_TREE 0
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -229,8 +229,8 @@ struct ctimer pop_timer;
 
 /*---------------------------------------------------------------------------*/
 
-#define AGGREGATION_INTERVAL 1000
-#define POP_INTERVAL 1000
+#define AGGREGATION_INTERVAL 500
+#define POP_INTERVAL 800
 
 static void aggregationCaller()
 {
@@ -248,7 +248,7 @@ static push_to_packetqueue(struct collect_conn *tc)
                                       tc))
     {
         add_packet_to_recent_packets(tc);
-        printf("SENDING\n");
+        printf("SENDING PAKCET\n");
         send_queued_packet(tc);
     }
     // else
@@ -269,12 +269,17 @@ static void popAggregationQueueCaller(struct collect_conn *tc)
     {
         packetbuf_clear();
         queuebuf_to_packetbuf(popped->q);
-        char* dataptr=packetbuf_dataptr();
+        char *dataptr = packetbuf_dataptr();
+        packetbuf_clear_data();
         memcpy(dataptr, popped->hdr_data, sizeof(struct data_msg_hdr));
-        free(popped->hdr_data);
+        printf("ID: %d, SRC: %s\n", popped->Eid, popped->srcList);
         packetbuf_set_datalen(sprintf(packetbuf_dataptr(), "ID:%d|%s", popped->Eid, popped->srcList) + 1);
         push_to_packetqueue(tc);
-        popped = popped->next;
+        free(popped->hdr_data);
+        queuebuf_free(popped->q);
+        struct queueElement *nextPtr = popped->next;
+        free(popped);
+        popped = nextPtr;
     }
     queuebuf_to_packetbuf(q);
 
@@ -747,13 +752,13 @@ send_queued_packet(struct collect_conn *c)
     struct collect_neighbor *n;
     struct data_msg_hdr hdr;
     int max_mac_rexmits;
-    // if (i == NULL)
-    // {
-    //     PRINTF("%d.%d: nothing on queue\n",
-    //            linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1]);
+    if (i == NULL)
+    {
+        PRINTF("%d.%d: nothing on queue\n",
+               linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1]);
 
-    //     return;
-    // }
+        return;
+    }
 
     /* We should send the first packet from the queue. */
     q = packetqueue_queuebuf(i);
@@ -1087,15 +1092,14 @@ send_ack(struct collect_conn *tc, const linkaddr_t *to, int flags)
     RIMESTATS_ADD(acktx);
     stats.acksent++;
 }
-/*---------------------------------------------------------------------------*/
- void
-add_packet_to_recent_packets(struct collect_conn *tc)
+/*-----------------------------------------------a----------------------------*/
+void add_packet_to_recent_packets(struct collect_conn *tc)
 {
     /* Remember that we have seen this packet for later, but only if
        it has a length that is larger than zero. Packets with size
        zero are keepalive or proactive link estimate probes, so we do
        not record them in our history. */
-    if (packetbuf_datalen() > sizeof(struct data_msg_hdr)
+    if (packetbuf_datalen() > sizeof(struct data_msg_hdr))
     {
         recent_packets[recent_packet_ptr].eseqno =
             packetbuf_attr(PACKETBUF_ATTR_EPACKET_ID);
@@ -1157,27 +1161,27 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
 {
     struct collect_conn *tc = (struct collect_conn *)((char *)c - offsetof(struct collect_conn, unicast_conn));
     int i;
-    struct data_msg_hdr hdr;
+    struct data_msg_hdr *hdr = (struct data_msg_hdr *)malloc(PACKETBUF_HDR_SIZE);
     uint8_t ackflags = 0;
     struct collect_neighbor *n;
 
     // print_buf();
 
-    memcpy(&hdr, packetbuf_dataptr(), sizeof(struct data_msg_hdr));
+    memcpy(hdr, packetbuf_dataptr(), sizeof(struct data_msg_hdr));
     // memcpy(&hdr, packetbuf_hdrptr(), sizeof(struct data_msg_hdr));
-    printf("RTMETRIC: %d\n", hdr.rtmetric);
+    printf("RTMETRIC: %d\n", hdr->rtmetric);
 
     /* First update the neighbors rtmetric with the information in the
        packet header. */
     PRINTF("node_packet_received: from %d.%d rtmetric %d\n",
-           from->u8[0], from->u8[1], hdr.rtmetric);
+           from->u8[0], from->u8[1], hdr->rtmetric);
     // printf("node_packet_received: from %d.%d rtmetric %d\n",
     //        from->u8[0], from->u8[1], hdr.rtmetric);
     n = collect_neighbor_list_find(&tc->neighbor_list,
                                    packetbuf_addr(PACKETBUF_ADDR_SENDER));
     if (n != NULL)
     {
-        collect_neighbor_update_rtmetric(n, hdr.rtmetric);
+        collect_neighbor_update_rtmetric(n, hdr->rtmetric);
         update_rtmetric(tc);
     }
 
@@ -1285,22 +1289,6 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
             /*
             Push packet into aggregation queue
             */
-            char *dataptr = (char *)packetbuf_dataptr()+4;
-            printf("DATAPTR- %s\n", dataptr);
-            // int id = get_event_id(dataptr);
-            // printf("EVENT-ID - %d ", id);
-            // char mote_list[100];
-            // get_mote_list(dataptr, mote_list);
-            // printf("MOTE-LIST: %s", mote_list);
-            // struct queuebuf *q = queuebuf_new_from_packetbuf();
-            // long exp_time = 1000;
-            // if (q != NULL)
-            // {
-            //     // // queuebuf_to_packetbuf(q);
-            //     // send_ack(tc, &ack_to, 0);
-            //     pushCustomQueue(aggregation_head, id, mote_list, exp_time, q);
-            //     queuebuf_free(q);
-            // }
 
             /* If we are not the sink, we forward the packet to our best
                neighbor. First, we make sure that the packet comes from a
@@ -1310,7 +1298,7 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
                packet to let the next hop know what our rtmetric is. Third,
                we update the hop count and ttl. */
 
-            if (hdr.rtmetric <= tc->rtmetric)
+            if (hdr->rtmetric <= tc->rtmetric)
             {
                 ackflags |= ACK_FLAGS_RTMETRIC_NEEDS_UPDATE;
             }
@@ -1334,24 +1322,41 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
                memory problems. We first check the size of our sending queue
                to ensure that we always have entries for packets that
                are originated by this node. */
-            if (packetqueue_len(&tc->send_queue) <= MAX_SENDING_QUEUE - MIN_AVAILABLE_QUEUE_ENTRIES &&
-                packetqueue_enqueue_packetbuf(&tc->send_queue,
-                                              FORWARD_PACKET_LIFETIME_BASE *
-                                                  packetbuf_attr(PACKETBUF_ATTR_MAX_REXMIT),
-                                              tc))
-            {
-                add_packet_to_recent_packets(tc);
-                send_ack(tc, &ack_to, ackflags);
-                printf("SENDING\n");
-                send_queued_packet(tc);
+            char *dataptr = (char *)packetbuf_dataptr() + 4;
+            printf("DATAPTR- %s\n", dataptr);
+            int id = get_event_id(dataptr);
+            printf("EVENT-ID - %d ", id);
+            char mote_list[100];
+            get_mote_list(dataptr, mote_list);
+            printf("MOTE-LIST: %s", mote_list);
+            struct queuebuf *q = queuebuf_new_from_packetbuf();
+
+            long exp_time = 1000;
+            if (q != NULL)
+            {   
+                printf("PUSHING TO AGG QUEUE\n");
+                aggregation_head = pushCustomQueue(aggregation_head, id, mote_list, exp_time, q, hdr);
+                send_ack(tc, &ack_to, 0);
             }
-            else
-            {
-                send_ack(tc, &ack_to, ackflags | ACK_FLAGS_DROPPED | ACK_FLAGS_CONGESTED);
-                PRINTF("%d.%d: packet dropped: no queue buffer available\n",
-                       linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1]);
-                stats.qdrop++;
-            }
+
+            // if (packetqueue_len(&tc->send_queue) <= MAX_SENDING_QUEUE - MIN_AVAILABLE_QUEUE_ENTRIES &&
+            //     packetqueue_enqueue_packetbuf(&tc->send_queue,
+            //                                   FORWARD_PACKET_LIFETIME_BASE *
+            //                                       packetbuf_attr(PACKETBUF_ATTR_MAX_REXMIT),
+            //                                   tc))
+            // {
+            //     add_packet_to_recent_packets(tc);
+            //     send_ack(tc, &ack_to, ackflags);
+            //     printf("SENDING\n");
+            //     send_queued_packet(tc);
+            // }
+            // else
+            // {
+            //     send_ack(tc, &ack_to, ackflags | ACK_FLAGS_DROPPED | ACK_FLAGS_CONGESTED);
+            //     PRINTF("%d.%d: packet dropped: no queue buffer available\n",
+            //            linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1]);
+            //     stats.qdrop++;
+            // }
             // struct queuebuf *q;
             // if (q != NULL)
             // {
@@ -1612,8 +1617,8 @@ void collect_open(struct collect_conn *tc, uint16_t channels,
     tc->send_queue.memb = &send_queue_memb;
     collect_neighbor_init();
     /*CTIMER FOR QUEUE AGGREGATION*/
-    // ctimer_set(&aggregation_timer, AGGREGATION_INTERVAL, aggregationCaller, NULL);
-    // ctimer_set(&aggregation_timer, POP_INTERVAL, popAggregationQueueCaller, tc);
+    ctimer_set(&aggregation_timer, AGGREGATION_INTERVAL, aggregationCaller, NULL);
+    ctimer_set(&aggregation_timer, POP_INTERVAL, popAggregationQueueCaller, tc);
 
 #if !COLLECT_ANNOUNCEMENTS
     neighbor_discovery_open(&tc->neighbor_discovery_conn, channels,

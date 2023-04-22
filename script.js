@@ -5,7 +5,7 @@ var ref = ["Hello", "Hello", "Hello", "Hello"];
 var last = [];
 var ctr = 0;
 var arr = [];
-var range = [15, 15, 15, 15, 15];   // radius of every event
+var range = [15, 20, 25, 30, 35];   // radius of every event
 var count = allm.length;
 
 var s_time = [];
@@ -35,8 +35,8 @@ var cc = 40;
 while (cc > 0) {
 	var refer_msg = msg;
 	cc = cc - 1;
-	var x_size = 20;  // max horizontal length
-	var y_size = 20;	// max vertical length
+	var x_size = 60;  // max horizontal length
+	var y_size = 60;	// max vertical length
 	// var k = Math.floor((Math.random()* ref.length));
 	var radius = range[Math.floor((Math.random() * range.length))];
 

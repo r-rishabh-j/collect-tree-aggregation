@@ -1,134 +1,18 @@
 #include "sys/ctimer.h"
 #include "packetqueue.h"
-#include <unistd.h>
-#include <sys/time.h>
+#include "sys/clock.h"
+#include "contiki.h"
 
 struct queueElement
 {
   int Eid;
   char srcList[100];
-  long expirationTIme;
-  struct queueElement *prev;
-  struct queueElement *next;
-  struct queuebuf *q;
-  struct data_msg_hdr *hdr_data;
+  uint32_t expirationTIme;
+  struct queueElement* prev;
+  struct queueElement* next;
+  struct queuebuf* q;
+  struct data_msg_hdr* hdr_data;
 };
-// struct ptrPair{
-//   struct queueElement* head;
-
-//   struct queueElement* newList;
-// };
-
-/*---------------------------------------------------------------------------*/
-// void packetqueue_init(struct packetqueue *q)
-// {
-//   list_init(*q->list);
-//   memb_init(q->memb);
-// }
-// /*---------------------------------------------------------------------------*/
-// static void remove_queued_packet(void *item)
-// {
-//   struct packetqueue_item *i = item;
-//   struct packetqueue *q = i->queue;
-
-//   list_remove(*q->list, i);
-//   queuebuf_free(i->buf);
-//   ctimer_stop(&i->lifetimer);
-//   memb_free(q->memb, i);
-//   /*  printf("removing queued packet due to timeout\n");*/
-// }
-// /*---------------------------------------------------------------------------*/
-// int packetqueue_enqueue_packetbuf(struct packetqueue *q, clock_time_t lifetime,
-//                                   void *ptr)
-// {
-//   struct packetqueue_item *i;
-
-//   /* Allocate a memory block to hold the packet queue item. */
-//   i = memb_alloc(q->memb);
-
-//   if (i == NULL)
-//   {
-//     return 0;
-//   }
-
-//   /* Allocate a queuebuf and copy the contents of the packetbuf into it. */
-//   i->buf = queuebuf_new_from_packetbuf();
-
-//   if (i->buf == NULL)
-//   {
-//     memb_free(q->memb, i);
-//     return 0;
-//   }
-
-//   i->queue = q;
-//   i->ptr = ptr;
-
-//   /* Setup a ctimer that removes the packet from the queue when its
-//      lifetime expires. If the lifetime is zero, we do not set a
-//      lifetimer. */
-//   if (lifetime > 0)
-//   {
-//     ctimer_set(&i->lifetimer, lifetime, remove_queued_packet, i);
-//   }
-
-//   /* Add the item to the queue. */
-//   list_add(*q->list, i);
-
-//   return 1;
-// }
-// /*---------------------------------------------------------------------------*/
-// struct packetqueue_item *
-// packetqueue_first(struct packetqueue *q)
-// {
-//   return list_head(*q->list);
-// }
-// /*---------------------------------------------------------------------------*/
-// void packetqueue_dequeue(struct packetqueue *q)
-// {
-//   struct packetqueue_item *i;
-
-//   i = list_head(*q->list);
-//   if (i != NULL)
-//   {
-//     list_remove(*q->list, i);
-//     queuebuf_free(i->buf);
-//     ctimer_stop(&i->lifetimer);
-//     memb_free(q->memb, i);
-//   }
-// }
-// /*---------------------------------------------------------------------------*/
-// int packetqueue_len(struct packetqueue *q)
-// {
-//   return list_length(*q->list);
-// }
-// /*---------------------------------------------------------------------------*/
-// struct queuebuf *
-// packetqueue_queuebuf(struct packetqueue_item *i)
-// {
-//   if (i != NULL)
-//   {
-//     return i->buf;
-//   }
-//   else
-//   {
-//     return NULL;
-//   }
-// }
-// /*---------------------------------------------------------------------------*/
-// void *
-// packetqueue_ptr(struct packetqueue_item *i)
-// {
-//   if (i != NULL)
-//   {
-//     return i->ptr;
-//   }
-//   else
-//   {
-//     return NULL;
-//   }
-// }
-// /*---------------------------------------------------------------------------*/
-// /** @} */
 
 void aggregateCustomQueue(struct queueElement **Head)
 {
@@ -146,6 +30,12 @@ void aggregateCustomQueue(struct queueElement **Head)
     {
       if (it->Eid == ptr->Eid)
       {
+
+
+        // saving the ptr information for que buff and headers that are to be freed
+        struct queuebuf* toFreeq=it->q;
+        struct data_msg_hdr* toFreeHdr=it->hdr_data;
+        
         // making a bigger source list.
         sprintf(ptr->srcList, "%s,%s", ptr->srcList, it->srcList);
 
@@ -154,9 +44,18 @@ void aggregateCustomQueue(struct queueElement **Head)
         {
           ptr->expirationTIme = it->expirationTIme;
 
+          toFreeq = ptr->q;
+          toFreeHdr = ptr->hdr_data;
+
           // overwriting the queue pointer
           ptr->q = it->q;
+          ptr->hdr_data = it->hdr_data;
+
+          
         }
+
+        queuebuf_free(toFreeq);
+        free(toFreeHdr);
 
         // we need to delete this element now.
         struct queueElement *toDel = it;
@@ -184,18 +83,15 @@ void aggregateCustomQueue(struct queueElement **Head)
   *Head = head;
 }
 
-struct queueElement *pushCustomQueue(struct queueElement *head, int Eid, char srcList[100], long expirationTime, struct queuebuf *q, struct data_msg_hdr *hdr)
+struct queueElement *pushCustomQueue(struct queueElement *head, int Eid, char srcList[100], long expirationTime, struct queuebuf *q, struct data_msg_hdr* hdr)
 {
 
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-
-  double time_in_mill = (tv.tv_sec) * 1000 + (tv.tv_usec) / 1000; // convert tv_sec & tv_usec to millisecond
+  uint32_t time_in_mill = clock_time() * (1000 / CLOCK_SECOND);
 
   // adding the expiration time to current time in miliseconds
-  expirationTime += time_in_mill;
+  expirationTime+=time_in_mill;
 
-  if (head == NULL)
+  if(head==NULL)
   {
     // inserting the first element into the queue
     head = (struct queueElement *)malloc(sizeof(struct queueElement));
@@ -219,6 +115,7 @@ struct queueElement *pushCustomQueue(struct queueElement *head, int Eid, char sr
   head = newHead;
   head->Eid = Eid;
   head->q = q;
+  head->hdr_data = hdr;
   sprintf(head->srcList, "%s", srcList);
   return head;
 }
@@ -233,10 +130,7 @@ struct queueElement *popCustomQueue(struct queueElement **Head)
   while (ptr != NULL)
   {
 
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-
-    double time_in_mill = (tv.tv_sec) * 1000 + (tv.tv_usec) / 1000; // convert tv_sec & tv_usec to millisecond
+    uint32_t time_in_mill = clock_time() * (1000 / CLOCK_SECOND);
 
     // current time in miliseconds
     long currentTime = time_in_mill;

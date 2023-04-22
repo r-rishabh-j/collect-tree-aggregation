@@ -84,6 +84,15 @@ packetbuf_clear(void)
   packetbufptr = &packetbuf[PACKETBUF_HDR_SIZE];
   packetbuf_attr_clear();
 }
+
+void
+packetbuf_clear_data(void)
+{
+  buflen = bufptr = 0;
+  hdrptr = PACKETBUF_HDR_SIZE;
+
+  packetbufptr = &packetbuf[PACKETBUF_HDR_SIZE];
+}
 /*---------------------------------------------------------------------------*/
 void
 packetbuf_clear_hdr(void)

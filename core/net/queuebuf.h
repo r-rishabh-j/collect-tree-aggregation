@@ -86,6 +86,7 @@
 #endif /* QUEUEBUF_CONF_DEBUG */
 
 struct queuebuf;
+// struct queuebuf_data;
 
 void queuebuf_init(void);
 
@@ -110,6 +111,8 @@ packetbuf_attr_t queuebuf_attr(struct queuebuf *b, uint8_t type);
 void queuebuf_debug_print(void);
 
 int queuebuf_numfree(void);
+
+// static struct queuebuf_data * queuebuf_load_to_ram(struct queuebuf *b);
 
 #endif /* __QUEUEBUF_H__ */
 

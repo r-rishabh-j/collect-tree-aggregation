@@ -278,6 +278,8 @@ int packetbuf_hdralloc(int size);
  */
 int packetbuf_hdrreduce(int size);
 
+void packetbuf_clear_data(void);
+
 /* Packet attributes stuff below: */
 
 typedef uint16_t packetbuf_attr_t;

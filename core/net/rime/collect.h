@@ -148,6 +148,7 @@ enum {
   COLLECT_ROUTER,
 };
 
+
 void collect_open(struct collect_conn *c, uint16_t channels,
                   uint8_t is_router,
                   const struct collect_callbacks *callbacks);
