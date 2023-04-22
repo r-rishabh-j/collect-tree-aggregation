@@ -281,6 +281,7 @@ static void popAggregationQueueCaller(struct collect_conn *tc)
         queuebuf_to_packetbuf(popped->q);
         char *dataptr = packetbuf_dataptr();
         packetbuf_clear_data();
+        packetbuf_hdralloc(sizeof(struct data_msg_hdr));
         memcpy(dataptr, popped->hdr_data, sizeof(struct data_msg_hdr));
         printf("ID: %d, SRC: %s\n", popped->Eid, popped->srcList);
         packetbuf_set_datalen(sprintf(packetbuf_dataptr(), "ID:%d|%s", popped->Eid, popped->srcList) + 1);
@@ -1202,7 +1203,8 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
        the packet. */
     if (packetbuf_attr(PACKETBUF_ATTR_PACKET_TYPE) ==
         PACKETBUF_ATTR_PACKET_TYPE_DATA)
-    {
+    {   
+        // printf("DATA PACKET HAIIIII!!\n");
         linkaddr_t ack_to;
 #if DEBUG
         uint8_t packet_seqno;
@@ -1344,7 +1346,7 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
             get_mote_list(dataptr, mote_list);
             printf("MOTE-LIST: %s\n", mote_list);
             struct queuebuf *q = queuebuf_new_from_packetbuf();
-
+            printf("BEFORE HE\n");
             long exp_time = 200;
             if (q != NULL)
             {
