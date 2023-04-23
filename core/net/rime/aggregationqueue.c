@@ -138,16 +138,16 @@ struct queueElement *popCustomQueue(struct queueElement **Head)
   struct queueElement *ptr = head;
 
 
-  printf("POP custom queue called");
+  // printf("POP custom queue called");
 
-  if(head==NULL)
-  {
-    printf("And the queue is empty");
-  }
-  else
-  {
-    printf("And the queue is not empty");
-  }
+  // if(head==NULL)
+  // {
+  //   printf("And the queue is empty");
+  // }
+  // else
+  // {
+  //   printf("And the queue is not empty");
+  // }
 
   while (ptr != NULL)
   {
