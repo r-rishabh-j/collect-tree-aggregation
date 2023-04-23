@@ -1857,7 +1857,7 @@ int collect_send(struct collect_conn *tc, int rexmits)
         double rt = tc->rtmetric;
         rt = rt / RTMETRIC_MAX;
         // long exp_time = -(long)(((double)1300)*rt) + 1700;
-        long exp_time = -(long)(((double)1300) * rt) + 4000;
+        long exp_time = -(long)(((double)1300) * rt) + 5000;
         printf("EXPIRATION TIME : %ld\n", exp_time);
         if (q != NULL)
         {
