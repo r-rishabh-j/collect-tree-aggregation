@@ -71,7 +71,9 @@ static const struct packetbuf_attrlist attributes[] =
 #define NUM_RECENT_PACKETS 16
 
 linkaddr_t mote_address;
-int mode_id=-1;
+int mode_id = -1;
+
+uint8_t distance_to_sink=2;
 
 struct recent_packet
 {
@@ -234,8 +236,8 @@ struct ctimer pop_timer;
 
 /*---------------------------------------------------------------------------*/
 
-#define AGGREGATION_INTERVAL 200
-#define POP_INTERVAL 300
+#define AGGREGATION_INTERVAL 300
+#define POP_INTERVAL 500
 
 static void aggregationCaller()
 {
@@ -246,7 +248,7 @@ static void aggregationCaller()
 
 void add_packet_to_recent_packets(struct collect_conn *tc);
 
-static push_to_packetqueue(struct collect_conn *tc)
+static void push_to_packetqueue(struct collect_conn *tc)
 {
     printf("HAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
     if (packetqueue_len(&tc->send_queue) <= MAX_SENDING_QUEUE - MIN_AVAILABLE_QUEUE_ENTRIES &&
@@ -1206,7 +1208,7 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
        the packet. */
     if (packetbuf_attr(PACKETBUF_ATTR_PACKET_TYPE) ==
         PACKETBUF_ATTR_PACKET_TYPE_DATA)
-    {   
+    {
         // printf("DATA PACKET HAIIIII!!\n");
         linkaddr_t ack_to;
 #if DEBUG
@@ -1339,8 +1341,9 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
                to ensure that we always have entries for packets that
                are originated by this node. */
             char *dataptr = (char *)packetbuf_dataptr();
-            if(dataptr[0]!='I'){
-                dataptr+=4;
+            if (dataptr[0] != 'I')
+            {
+                dataptr += 4;
             }
             printf("DATAPTR- %s\n", dataptr);
             int id = get_event_id(dataptr);
@@ -1350,7 +1353,11 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
             printf("MOTE-LIST: %s\n", mote_list);
             struct queuebuf *q = queuebuf_new_from_packetbuf();
             printf("BEFORE HE\n");
-            long exp_time = 2000;
+
+            double rt = tc->rtmetric;
+            rt = rt/RTMETRIC_MAX;
+            long exp_time = -(long)(((double)1300)*rt) + 1700;
+
             if (q != NULL)
             {
                 printf("PUSHING TO AGG QUEUE\n");
@@ -1380,7 +1387,6 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
             // struct queuebuf *q;
             // if (q != NULL)
             // {
-
             // // queuebuf_to_packetbuf(q);
             // send_ack(tc, &ack_to, 0);
             // queuebuf_free(q);
@@ -1620,6 +1626,17 @@ static const struct neighbor_discovery_callbacks neighbor_discovery_callbacks =
     {adv_received, NULL};
 #endif /* !COLLECT_ANNOUNCEMENTS */
 
+void set_distance(linkaddr_t address)
+{
+    // Get the route entry for the sink
+    // collect_depth
+
+    // Calculate the path length from the current node to the sink
+    uint8_t path_length = collect_depth(linkaddr_cmp(&linkaddr_null, &address))+1; // +1 to include the current node
+    printf("DISTANCE IS %hhu\n", path_length);
+    distance_to_sink = path_length;
+}
+
 void collect_open(struct collect_conn *tc, uint16_t channels,
                   uint8_t is_router, linkaddr_t address,
                   const struct collect_callbacks *cb)
@@ -1638,7 +1655,7 @@ void collect_open(struct collect_conn *tc, uint16_t channels,
     collect_neighbor_init();
     /*CTIMER FOR QUEUE AGGREGATION*/
     mote_address = address;
-    mode_id=address.u8[0];
+    mode_id = address.u8[0];
     ctimer_set(&aggregation_timer, AGGREGATION_INTERVAL, aggregationCaller, NULL);
     ctimer_set(&pop_timer, POP_INTERVAL, popAggregationQueueCaller, tc);
 

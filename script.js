@@ -29,7 +29,7 @@ for (var i = 0; i < allm.length; i++) {
 
 }
 log.log("******\n");
-var cc = 1000;
+var cc = 100;
 
 
 while (cc > 0) {

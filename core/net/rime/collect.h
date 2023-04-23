@@ -150,7 +150,7 @@ enum {
 
 
 void collect_open(struct collect_conn *c, uint16_t channels,
-                  uint8_t is_router, int mote_id,
+                  uint8_t is_router, linkaddr_t address,
                   const struct collect_callbacks *callbacks);
 void collect_close(struct collect_conn *c);
 
@@ -164,6 +164,7 @@ const linkaddr_t *collect_parent(struct collect_conn *c);
 void collect_set_keepalive(struct collect_conn *c, clock_time_t period);
 
 void collect_print_stats(void);
+void set_distance(linkaddr_t address);
 
 #define COLLECT_MAX_DEPTH (COLLECT_LINK_ESTIMATE_UNIT * 64 - 1)
 
