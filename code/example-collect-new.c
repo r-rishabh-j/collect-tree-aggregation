@@ -51,7 +51,7 @@ PROCESS_THREAD(example_collect_process, ev, data)
     PROCESS_WAIT_UNTIL(etimer_expired(&et));
 
     set_distance(address);
-
+    printf("STARTING WHILE LOOP\n");
     while (1)
     {
         PROCESS_WAIT_EVENT();

@@ -1,7 +1,10 @@
-TIMEOUT(24000);
-allm = sim.getMotes();
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-var ref = ["Hello", "Hello", "Hello", "Hello"];
+TIMEOUT(120000);
+allm = sim.getMotes();
+// await sleep(10000);
 var last = [];
 var ctr = 0;
 var arr = [];
@@ -29,9 +32,9 @@ for (var i = 0; i < allm.length; i++) {
 
 }
 log.log("******\n");
-var cc = 1000;
-var i = 0
-var j = 0
+var cc = 30;
+var xi = 0
+var xj = 0
 
 while (cc > 0) {
 	var refer_msg = msg;
@@ -40,24 +43,6 @@ while (cc > 0) {
 	var y_size = 100;	// max vertical length
 	// var k = Math.floor((Math.random()* ref.length));
 	var radius = range[Math.floor((Math.random() * range.length))];
-
-	var refer_msg = msg;
-	if (refer_msg.contains("Sink got message")) {
-		var p = refer_msg.split("'");
-		var f = p[1];
-		var res = f.split(":");
-		log.log("Event Id : " + res[0] + "\n");
-		var pos = Number(res[0]);
-		var cur_date = new Date();
-		e_time[pos] = time;
-		summ[pos] = summ[pos] + e_time[pos];
-		count_elem[pos] = count_elem[pos] + 1;
-		for (var u = 0; u < ctr; u++) {
-			log.log("Eid : " + u + " :  ST -> " + s_time[u] + " ET -> " + e_time[u] + " " + summ[u] + " " + count_elem[u] + " \n");
-		}
-	}
-
-	// msg = ctr + ":" + ref[k]; // generating a message
 	msg = "ID:" + ctr; // generating a message
 
 
@@ -66,21 +51,17 @@ while (cc > 0) {
 		p = p - 1;
 	}
 	var flag = 0;
-	//WAIT_UNTIL (msg.equals(ref[k]));
-	//var x = Math.floor((Math.random() * x_size));  // 
-	//var y = Math.floor((Math.random() * y_size));  // generate event at x,y 
-	
-	
 
-	var x = i
-	var y = j
 
-	j=j+10;
+	var x = xi
+	var y = xj
 
-	if(j>100)
+	xj=xj+10;
+
+	if(xj>100)
 	{
-		j=0;
-		i=i+1;		
+		xj=0;
+		xi=xi+50;		
 	}
 	
 
@@ -92,14 +73,14 @@ while (cc > 0) {
 	summ[ctr] = 0;
 	count_elem[ctr] = 0;
 	ctr++;
-	for (var i = 0; i < allm.length; i++) {
-		mote = arr[i];
+	for (var it = 0; it < allm.length; it++) {
+		mote = arr[it];
 		var d_x = mote.getInterfaces().getPosition().getXCoordinate();
 		var d_y = mote.getInterfaces().getPosition().getYCoordinate();
 		var dist = Math.sqrt((d_x - x) * (d_x - x) + (d_y - y) * (d_y - y));
 		if (dist <= radius) {
 			write(mote, msg);
-			log.log("Event : " + msg + " with radius : " + radius + " sensed by mote Number : " + i + "'\n");
+			log.log("Event : " + msg + " with radius : " + radius + " sensed by mote Number : " + it + "'\n");
 			flag = 1;
 		}
 	}

@@ -73,7 +73,7 @@ static const struct packetbuf_attrlist attributes[] =
 linkaddr_t mote_address;
 int mode_id = -1;
 
-uint8_t distance_to_sink=2;
+uint8_t distance_to_sink = 2;
 
 struct recent_packet
 {
@@ -284,12 +284,13 @@ static void popAggregationQueueCaller(struct collect_conn *tc)
     {
         packetbuf_clear();
         queuebuf_to_packetbuf(popped->q);
-        char *dataptr = packetbuf_dataptr();
         packetbuf_clear_data();
-        packetbuf_hdralloc(sizeof(struct data_msg_hdr));
-        memcpy(dataptr, popped->hdr_data, sizeof(struct data_msg_hdr));
+        char *dataptr = packetbuf_dataptr();
         printf("ID: %d, SRC: %s\n", popped->Eid, popped->srcList);
         packetbuf_set_datalen(sprintf(packetbuf_dataptr(), "ID:%d|%s", popped->Eid, popped->srcList) + 1);
+        packetbuf_hdralloc(sizeof(struct data_msg_hdr));
+        // memcpy(packetbuf_dataptr(), popped->hdr_data, sizeof(struct data_msg_hdr));
+        printf("HO: %s\n", packetbuf_dataptr());
         push_to_packetqueue(tc);
         free(popped->hdr_data);
         queuebuf_free(popped->q);
@@ -756,7 +757,7 @@ send_queued_packet(struct collect_conn *c)
        another one. */
     if (c->sending)
     {
-        PRINTF("%d.%d: queue, c is sending\n",
+        printf("%d.%d: queue, c is sending\n",
                linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1]);
         return;
     }
@@ -1261,6 +1262,7 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
         if (tc->rtmetric == RTMETRIC_SINK)
         {
             struct queuebuf *q;
+            printf("Sink packet recevied!\n");
 
             add_packet_to_recent_packets(tc);
             // printf("AT SINK\n");
@@ -1340,11 +1342,13 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
                memory problems. We first check the size of our sending queue
                to ensure that we always have entries for packets that
                are originated by this node. */
+            packetbuf_hdrreduce(sizeof(struct data_msg_hdr));
             char *dataptr = (char *)packetbuf_dataptr();
-            if (dataptr[0] != 'I')
-            {
-                dataptr += 4;
-            }
+            printf("MEEE %s\n", dataptr);
+            // while (dataptr[0] != 'I')
+            // {
+            //     dataptr += 1;
+            // }
             printf("DATAPTR- %s\n", dataptr);
             int id = get_event_id(dataptr);
             printf("EVENT-ID - %d ", id);
@@ -1355,10 +1359,10 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
             printf("BEFORE HE\n");
 
             double rt = tc->rtmetric;
-            rt = rt/RTMETRIC_MAX;
+            rt = rt / RTMETRIC_MAX;
             // long exp_time = -(long)(((double)1300)*rt) + 1700;
-            long exp_time = -(long)(((double)300)*rt) + 400;
-            printf("EXPIRATION TIME : %ld\n",exp_time);
+            long exp_time = -(long)(((double)1300) * rt) + 4000;
+            printf("EXPIRATION TIME : %ld\n", exp_time);
             if (q != NULL)
             {
                 printf("PUSHING TO AGG QUEUE\n");
@@ -1395,7 +1399,7 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
             // }
         }
         else if (packetbuf_attr(PACKETBUF_ATTR_TTL) <= 1)
-        {   
+        {
             char *dataptr = (char *)packetbuf_dataptr();
             if (dataptr[0] != 'I')
             {
@@ -1643,7 +1647,7 @@ void set_distance(linkaddr_t address)
     // collect_depth
 
     // Calculate the path length from the current node to the sink
-    uint8_t path_length = collect_depth(linkaddr_cmp(&linkaddr_null, &address))+1; // +1 to include the current node
+    uint8_t path_length = collect_depth(linkaddr_cmp(&linkaddr_null, &address)) + 1; // +1 to include the current node
     printf("DISTANCE IS %hhu\n", path_length);
     distance_to_sink = path_length;
 }
@@ -1821,7 +1825,7 @@ int collect_send(struct collect_conn *tc, int rexmits)
         packetbuf_set_attr(PACKETBUF_ATTR_MAX_REXMIT, rexmits);
     }
 
-    PRINTF("%d.%d: originating packet %d, max_rexmits %d\n",
+    printf("%d.%d: originating packet %d, max_rexmits %d\n",
            linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1],
            packetbuf_attr(PACKETBUF_ATTR_EPACKET_ID),
            packetbuf_attr(PACKETBUF_ATTR_MAX_REXMIT));
@@ -1840,65 +1844,85 @@ int collect_send(struct collect_conn *tc, int rexmits)
     else
     {
 
+        char *dataptr = (char *)packetbuf_dataptr();
+        printf("CLSEND %s\n", dataptr);
+        printf("DATAPTR- %s\n", dataptr);
+        int id = get_event_id(dataptr);
+        printf("EVENT-ID - %d ", id);
+        char mote_list[100];
+        get_mote_list(dataptr, mote_list);
+        printf("MOTE-LIST: %s\n", mote_list);
+        struct queuebuf *q = queuebuf_new_from_packetbuf();
+
+        double rt = tc->rtmetric;
+        rt = rt / RTMETRIC_MAX;
+        // long exp_time = -(long)(((double)1300)*rt) + 1700;
+        long exp_time = -(long)(((double)1300) * rt) + 4000;
+        printf("EXPIRATION TIME : %ld\n", exp_time);
+        if (q != NULL)
+        {
+            printf("PUSHING TO AGG QUEUE CLSEND\n");
+            aggregation_head = pushCustomQueue(aggregation_head, id, mote_list, exp_time, q, NULL);
+            printf("2AGg LIST len: %d\n", agg_list_len(aggregation_head));
+            add_packet_to_recent_packets(tc);
+        }
         /* Allocate space for the header. */
-        packetbuf_hdralloc(sizeof(struct data_msg_hdr));
+//         packetbuf_hdralloc(sizeof(struct data_msg_hdr));
 
-        if (packetqueue_enqueue_packetbuf(&tc->send_queue,
-                                          FORWARD_PACKET_LIFETIME_BASE *
-                                              packetbuf_attr(PACKETBUF_ATTR_MAX_REXMIT),
-                                          tc))
-        {
-            send_queued_packet(tc);
-            ret = 1;
-        }
-        else
-        {
-            printf("NOQUEUEBUF dropped\n");
-            PRINTF("%d.%d: drop originated packet: no queuebuf\n",
-                   linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1]);
-            PRINTF("%d.%d: drop originated packet: no queuebuf\n",
-                   linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1]);
-            ret = 0;
-        }
+//         if (packetqueue_enqueue_packetbuf(&tc->send_queue,
+//                                           FORWARD_PACKET_LIFETIME_BASE *
+//                                               packetbuf_attr(PACKETBUF_ATTR_MAX_REXMIT),
+//                                           tc))
+//         {
+//             send_queued_packet(tc);
+//             ret = 1;
+//         }
+//         else
+//         {
+//             printf("NOQUEUEBUF dropped\n");
+//             printf("%d.%d: drop originated packet: no queuebuf\n",
+//                    linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1]);
+//             ret = 0;
+//         }
 
-        n = collect_neighbor_list_find(&tc->neighbor_list, &tc->parent);
-        if (n != NULL)
-        {
-            PRINTF("%d.%d: sending to %d.%d\n",
-                   linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1],
-                   n->addr.u8[0], n->addr.u8[1]);
-        }
-        else
-        {
-            PRINTF("%d.%d: did not find any neighbor to send to\n",
-                   linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1]);
-#if COLLECT_ANNOUNCEMENTS
-#if COLLECT_CONF_WITH_LISTEN
-            PRINTF("listen\n");
-            announcement_listen(1);
-            ctimer_set(&tc->transmit_after_scan_timer, ANNOUNCEMENT_SCAN_TIME,
-                       send_queued_packet, tc);
-#else  /* COLLECT_CONF_WITH_LISTEN */
-            if (tc->is_router)
-            {
-                announcement_set_value(&tc->announcement, RTMETRIC_MAX);
-                announcement_bump(&tc->announcement);
-            }
-#endif /* COLLECT_CONF_WITH_LISTEN */
-#endif /* COLLECT_ANNOUNCEMENTS */
+//         n = collect_neighbor_list_find(&tc->neighbor_list, &tc->parent);
+//         if (n != NULL)
+//         {
+//             printf("%d.%d: sending to %d.%d\n",
+//                    linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1],
+//                    n->addr.u8[0], n->addr.u8[1]);
+//         }
+//         else
+//         {
+//             printf("%d.%d: did not find any neighbor to send to\n",
+//                    linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1]);
+// #if COLLECT_ANNOUNCEMENTS
+// #if COLLECT_CONF_WITH_LISTEN
+//             PRINTF("listen\n");
+//             announcement_listen(1);
+//             ctimer_set(&tc->transmit_after_scan_timer, ANNOUNCEMENT_SCAN_TIME,
+//                        send_queued_packet, tc);
+// #else  /* COLLECT_CONF_WITH_LISTEN */
+//             if (tc->is_router)
+//             {
+//                 announcement_set_value(&tc->announcement, RTMETRIC_MAX);
+//                 announcement_bump(&tc->announcement);
+//             }
+// #endif /* COLLECT_CONF_WITH_LISTEN */
+// #endif /* COLLECT_ANNOUNCEMENTS */
 
-            /*      if(packetqueue_enqueue_packetbuf(&tc->send_queue,
-                                             FORWARD_PACKET_LIFETIME_BASE *
-                                             packetbuf_attr(PACKETBUF_ATTR_MAX_REXMIT),
-                                             tc)) {
-        return 1;
-            } else {
-              PRINTF("%d.%d: drop originated packet: no queuebuf\n",
-                     linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1]);
-              PRINTF("%d.%d: drop originated packet: no queuebuf\n",
-                     linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1]);
-                     }*/
-        }
+//             /*      if(packetqueue_enqueue_packetbuf(&tc->send_queue,
+//                                              FORWARD_PACKET_LIFETIME_BASE *
+//                                              packetbuf_attr(PACKETBUF_ATTR_MAX_REXMIT),
+//                                              tc)) {
+//         return 1;
+//             } else {
+//               PRINTF("%d.%d: drop originated packet: no queuebuf\n",
+//                      linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1]);
+//               PRINTF("%d.%d: drop originated packet: no queuebuf\n",
+//                      linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1]);
+//                      }*/
+//         }
     }
     return ret;
 }
