@@ -236,8 +236,8 @@ struct ctimer pop_timer;
 
 /*---------------------------------------------------------------------------*/
 
-#define AGGREGATION_INTERVAL 500
-#define POP_INTERVAL 1500
+#define AGGREGATION_INTERVAL 200
+#define POP_INTERVAL 250
 
 static void aggregationCaller()
 {
@@ -1356,7 +1356,8 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
 
             double rt = tc->rtmetric;
             rt = rt/RTMETRIC_MAX;
-            long exp_time = -(long)(((double)1300)*rt) + 1700;
+            // long exp_time = -(long)(((double)1300)*rt) + 1700;
+            long exp_time = -(long)(((double)300)*rt) + 400;
             printf("EXPIRATION TIME : %ld\n",exp_time);
             if (q != NULL)
             {
@@ -1394,8 +1395,15 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
             // }
         }
         else if (packetbuf_attr(PACKETBUF_ATTR_TTL) <= 1)
-        {
-            printf("DROPPED TTL\n");
+        {   
+            char *dataptr = (char *)packetbuf_dataptr();
+            if (dataptr[0] != 'I')
+            {
+                dataptr += 4;
+            }
+            printf("DATAPTR- %s\n", dataptr);
+            int id = get_event_id(dataptr);
+            printf("DROPPED TTL, eID: %d\n", id);
             PRINTF("%d.%d: packet dropped: ttl %d\n",
                    linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1],
                    packetbuf_attr(PACKETBUF_ATTR_TTL));
