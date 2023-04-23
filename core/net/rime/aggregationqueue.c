@@ -106,6 +106,16 @@ struct queueElement *pushCustomQueue(struct queueElement *head, int Eid, char sr
     head->q = q;
     head->hdr_data = hdr;
     sprintf(head->srcList, "%s", srcList);
+    printf("The packet queue of this mote ->\n");
+
+    struct queueElement *it = head;
+
+    while(it!=NULL)
+    {
+      printf("%d,%s---",it->Eid,it->srcList);
+      it=it->next;
+    }
+    
     return head;
   }
 
@@ -121,7 +131,25 @@ struct queueElement *pushCustomQueue(struct queueElement *head, int Eid, char sr
   head->q = q;
   head->hdr_data = hdr;
   sprintf(head->srcList, "%s", srcList);
+  
+  printf("The packet queue of this mote ->\n");
+
+  struct queueElement *it = head;
+
+  while(it!=NULL)
+  {
+    printf("%d,%s---",it->Eid,it->srcList);
+    it=it->next;
+  }
+  
+  
+  
   return head;
+
+  
+
+
+
 }
 
 int agg_list_len(struct queueElement *head)
@@ -137,6 +165,8 @@ int agg_list_len(struct queueElement *head)
 
 struct queueElement *popCustomQueue(struct queueElement **Head)
 {
+
+  printf("POP called");
   struct queueElement *newList = NULL;
 
   struct queueElement *head = *Head;
@@ -161,7 +191,7 @@ struct queueElement *popCustomQueue(struct queueElement **Head)
 
     // current time in miliseconds
     long currentTime = time_in_mill;
-
+    printf("Time data->%ld^^%ld",currentTime,ptr->expirationTIme);
     if (ptr->expirationTIme <= currentTime)
     // if (1)
     {
@@ -185,6 +215,7 @@ struct queueElement *popCustomQueue(struct queueElement **Head)
       newList = ptr;
 
       ptr = toGoNext;
+      break;
     }
     else
     {
@@ -193,6 +224,17 @@ struct queueElement *popCustomQueue(struct queueElement **Head)
   }
 
   *Head = head;
+
+  struct queueElement* toPrint=newList;
+  if(toPrint==NULL)
+  {
+    printf("Nothing to POP\n");
+  }
+  while(toPrint!=NULL)
+  {
+    printf("%d,%s***",toPrint->Eid,toPrint->srcList);
+    toPrint=toPrint->next;
+  }
 
   return newList;
 }

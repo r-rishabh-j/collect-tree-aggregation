@@ -236,7 +236,7 @@ struct ctimer pop_timer;
 
 /*---------------------------------------------------------------------------*/
 
-#define AGGREGATION_INTERVAL 500
+#define AGGREGATION_INTERVAL 400
 #define POP_INTERVAL 600
 
 static void aggregationCaller()
@@ -260,6 +260,7 @@ static void push_to_packetqueue(struct collect_conn *tc)
         // add_packet_to_recent_packets(tc);
         printf("SENDING PAKCET\n");
         send_queued_packet(tc);
+        
     }
     // else
     // {
@@ -279,7 +280,14 @@ static void popAggregationQueueCaller(struct collect_conn *tc)
     {
         printf("NULLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL\n");
     }
+    else
+    {
+        printf("NOT-NULL");
+    }
     struct queuebuf *q = queuebuf_new_from_packetbuf();
+
+
+
     while (popped != NULL)
     {
         packetbuf_clear();
@@ -291,6 +299,9 @@ static void popAggregationQueueCaller(struct collect_conn *tc)
         packetbuf_hdralloc(sizeof(struct data_msg_hdr));
         // memcpy(packetbuf_dataptr(), popped->hdr_data, sizeof(struct data_msg_hdr));
         printf("HO: %s\n", packetbuf_dataptr());
+        // printf("Delaying\n");
+        // clock_delay(100000);
+        // printf("Delay End");
         push_to_packetqueue(tc);
         free(popped->hdr_data);
         queuebuf_free(popped->q);
@@ -1363,7 +1374,7 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
             double rt = tc->rtmetric;
             rt = rt / RTMETRIC_MAX;
             // long exp_time = -(long)(((double)1300)*rt) + 1700;
-            long exp_time = -(long)(((double)1300) * rt) + 4000;
+            long exp_time = -(long)(((double)1300) * rt) + 5000;
             printf("EXPIRATION TIME : %ld\n", exp_time);
             if (q != NULL)
             {
@@ -1674,7 +1685,7 @@ void collect_open(struct collect_conn *tc, uint16_t channels,
     mote_address = address;
     mode_id = address.u8[0];
     ctimer_set(&aggregation_timer, AGGREGATION_INTERVAL, aggregationCaller, NULL);
-    ctimer_set(&pop_timer, POP_INTERVAL*40, popAggregationQueueCaller, tc);
+    ctimer_set(&pop_timer, POP_INTERVAL*480, popAggregationQueueCaller, tc);
 
 #if !COLLECT_ANNOUNCEMENTS
     neighbor_discovery_open(&tc->neighbor_discovery_conn, channels,
@@ -1845,7 +1856,8 @@ int collect_send(struct collect_conn *tc, int rexmits)
     }
     else
     {
-
+        
+       // printf("First time send");
         char *dataptr = (char *)packetbuf_dataptr();
         printf("CLSEND %s\n", dataptr);
         printf("DATAPTR- %s\n", dataptr);
@@ -1863,6 +1875,7 @@ int collect_send(struct collect_conn *tc, int rexmits)
         printf("EXPIRATION TIME : %ld\n", exp_time);
         if (q != NULL)
         {
+            printf("First time send");
             printf("PUSHING TO AGG QUEUE CLSEND\n");
             aggregation_head = pushCustomQueue(aggregation_head, id, mote_list, exp_time, q, NULL);
             printf("2AGg LIST len: %d\n", agg_list_len(aggregation_head));
