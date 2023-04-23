@@ -291,6 +291,11 @@ static void popAggregationQueueCaller(struct collect_conn *tc)
         packetbuf_hdralloc(sizeof(struct data_msg_hdr));
         // memcpy(packetbuf_dataptr(), popped->hdr_data, sizeof(struct data_msg_hdr));
         printf("HO: %s\n", packetbuf_dataptr());
+        if (packetbuf_attr(PACKETBUF_ATTR_PACKET_TYPE) !=
+        PACKETBUF_ATTR_PACKET_TYPE_DATA){
+            printf("BADDDDDDDDDDD!\n");
+        }
+        printf("TTL: %d, EID: %d\n", packetbuf_attr(PACKETBUF_ATTR_TTL), popped->Eid);
         push_to_packetqueue(tc);
         free(popped->hdr_data);
         queuebuf_free(popped->q);
@@ -1373,6 +1378,9 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
                 add_packet_to_recent_packets(tc);
                 send_ack(tc, &ack_to, 0);
             }
+            else{
+                printf("NODE PACKET Q NULL");
+            }
 
             // if (packetqueue_len(&tc->send_queue) <= MAX_SENDING_QUEUE - MIN_AVAILABLE_QUEUE_ENTRIES &&
             //     packetqueue_enqueue_packetbuf(&tc->send_queue,
@@ -1650,7 +1658,7 @@ void set_distance(linkaddr_t address)
 
     // Calculate the path length from the current node to the sink
     uint8_t path_length = collect_depth(linkaddr_cmp(&linkaddr_null, &address)) + 1; // +1 to include the current node
-    printf("DISTANCE IS %hhu\n", path_length);
+    printf("DISTANCE IS %d\n", path_length);
     distance_to_sink = path_length;
 }
 
@@ -1868,6 +1876,11 @@ int collect_send(struct collect_conn *tc, int rexmits)
             printf("2AGg LIST len: %d\n", agg_list_len(aggregation_head));
             add_packet_to_recent_packets(tc);
         }
+        else
+        {
+            printf("SEND Q NULL");
+        }
+
         /* Allocate space for the header. */
 //         packetbuf_hdralloc(sizeof(struct data_msg_hdr));
 

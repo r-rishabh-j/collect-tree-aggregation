@@ -14,6 +14,7 @@ struct queueElement
   struct queueElement *next;
   struct queuebuf *q;
   struct data_msg_hdr *hdr_data;
+  struct ctimer aggregation_timer;
 };
 
 void aggregateCustomQueue(struct queueElement **Head)
