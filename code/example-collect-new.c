@@ -71,7 +71,7 @@ PROCESS_THREAD(example_collect_process, ev, data)
             packetbuf_set_datalen(sprintf(packetbuf_dataptr(),
                                           "%s|%d", line, linkaddr_node_addr.u8[0]) +
                                   1);
-            collect_send(&tc, 1);
+            collect_send(&tc, 15);
 
             parent = collect_parent(&tc);
             if (!linkaddr_cmp(parent, &oldparent))
