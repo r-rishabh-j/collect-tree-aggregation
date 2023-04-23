@@ -1357,7 +1357,7 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
             double rt = tc->rtmetric;
             rt = rt/RTMETRIC_MAX;
             long exp_time = -(long)(((double)1300)*rt) + 1700;
-
+            printf("EXPIRATION TIME : %ld\n",exp_time);
             if (q != NULL)
             {
                 printf("PUSHING TO AGG QUEUE\n");

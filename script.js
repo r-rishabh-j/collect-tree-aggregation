@@ -30,7 +30,8 @@ for (var i = 0; i < allm.length; i++) {
 }
 log.log("******\n");
 var cc = 1000;
-
+var i = 0
+var j = 0
 
 while (cc > 0) {
 	var refer_msg = msg;
@@ -71,8 +72,16 @@ while (cc > 0) {
 	
 	
 
-	var x = eventPos[cc][0]
-	var y = eventPos[cc][1]
+	var x = i
+	var y = j
+
+	j=j+10;
+
+	if(j>100)
+	{
+		j=0;
+		i=i+1;		
+	}
 	
 
 	// x = 20;   // in case you want to fix the location of event
