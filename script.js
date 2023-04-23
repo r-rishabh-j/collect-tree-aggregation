@@ -29,9 +29,7 @@ for (var i = 0; i < allm.length; i++) {
 
 }
 log.log("******\n");
-var cc = 3;
-
-var eventPos =[[6.9,59.54],[52.04,57.75],[95,61]]
+var cc = 1000;
 
 
 while (cc > 0) {
