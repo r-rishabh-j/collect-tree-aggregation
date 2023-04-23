@@ -28,8 +28,12 @@ void aggregateCustomQueue(struct queueElement **Head)
   while (ptr != NULL)
   {
     struct queueElement *it = ptr->next;
+    
+    
+    
     while (it != NULL)
     {
+      
       if (it->Eid == ptr->Eid)
       {
         printf("FOUND!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
@@ -158,7 +162,7 @@ struct queueElement *popCustomQueue(struct queueElement **Head)
     long currentTime = time_in_mill;
 
     // if (ptr->expirationTIme <= currentTime)
-    if (1)
+    if (ptr->expirationTIme <= currentTime)
     {
       if (ptr == head)
       {

@@ -236,8 +236,8 @@ struct ctimer pop_timer;
 
 /*---------------------------------------------------------------------------*/
 
-#define AGGREGATION_INTERVAL 300
-#define POP_INTERVAL 500
+#define AGGREGATION_INTERVAL 500
+#define POP_INTERVAL 600
 
 static void aggregationCaller()
 {
@@ -795,7 +795,7 @@ send_queued_packet(struct collect_conn *c)
             buffer attributes and set the appropriate flags in the
             Collect connection structure and send the packet. */
 
-            PRINTF("%d.%d: sending packet to %d.%d with eseqno %d\n",
+            printf("%d.%d: sending packet to %d.%d with eseqno %d\n",
                    linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1],
                    n->addr.u8[0], n->addr.u8[1],
                    packetbuf_attr(PACKETBUF_ATTR_EPACKET_ID));
@@ -1190,7 +1190,7 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
 
     /* First update the neighbors rtmetric with the information in the
        packet header. */
-    PRINTF("node_packet_received: from %d.%d rtmetric %d\n",
+    printf("node_packet_received: from %d.%d rtmetric %d\n",
            from->u8[0], from->u8[1], hdr->rtmetric);
     // printf("node_packet_received: from %d.%d rtmetric %d\n",
     //        from->u8[0], from->u8[1], hdr.rtmetric);
@@ -1356,7 +1356,7 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
 
             double rt = tc->rtmetric;
             rt = rt/RTMETRIC_MAX;
-            long exp_time = -(long)(((double)1300)*rt) + 1700;
+            long exp_time = -(long)(((double)1300)*rt) + 5000;
             printf("EXPIRATION TIME : %ld\n",exp_time);
             if (q != NULL)
             {
@@ -1837,6 +1837,11 @@ int collect_send(struct collect_conn *tc, int rexmits)
                                               packetbuf_attr(PACKETBUF_ATTR_MAX_REXMIT),
                                           tc))
         {
+
+            printf("%d.%d: originating packet %d, max_rexmits %d\n",
+           linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1],
+           packetbuf_attr(PACKETBUF_ATTR_EPACKET_ID),
+           packetbuf_attr(PACKETBUF_ATTR_MAX_REXMIT));
             send_queued_packet(tc);
             ret = 1;
         }
@@ -1852,13 +1857,13 @@ int collect_send(struct collect_conn *tc, int rexmits)
         n = collect_neighbor_list_find(&tc->neighbor_list, &tc->parent);
         if (n != NULL)
         {
-            PRINTF("%d.%d: sending to %d.%d\n",
+            printf("%d.%d: sending to %d.%d\n",
                    linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1],
                    n->addr.u8[0], n->addr.u8[1]);
         }
         else
         {
-            PRINTF("%d.%d: did not find any neighbor to send to\n",
+            printf("%d.%d: did not find any neighbor to send to\n",
                    linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1]);
 #if COLLECT_ANNOUNCEMENTS
 #if COLLECT_CONF_WITH_LISTEN
