@@ -301,7 +301,9 @@ static void popAggregationQueueCaller(struct collect_conn *tc)
     queuebuf_to_packetbuf(q);
     queuebuf_free(q);
 
-    ctimer_restart(&pop_timer);
+    ctimer_reset(&pop_timer);
+    // ctimer_restart(&pop_timer);
+    ctimer_set(&pop_timer, POP_INTERVAL, popAggregationQueueCaller, tc);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -796,7 +798,7 @@ send_queued_packet(struct collect_conn *c)
             buffer attributes and set the appropriate flags in the
             Collect connection structure and send the packet. */
 
-            PRINTF("%d.%d: sending packet to %d.%d with eseqno %d\n",
+            printf("%d.%d: sending packet to %d.%d with eseqno %d\n",
                    linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1],
                    n->addr.u8[0], n->addr.u8[1],
                    packetbuf_attr(PACKETBUF_ATTR_EPACKET_ID));
@@ -1672,7 +1674,7 @@ void collect_open(struct collect_conn *tc, uint16_t channels,
     mote_address = address;
     mode_id = address.u8[0];
     ctimer_set(&aggregation_timer, AGGREGATION_INTERVAL, aggregationCaller, NULL);
-    ctimer_set(&pop_timer, POP_INTERVAL, popAggregationQueueCaller, tc);
+    ctimer_set(&pop_timer, POP_INTERVAL*40, popAggregationQueueCaller, tc);
 
 #if !COLLECT_ANNOUNCEMENTS
     neighbor_discovery_open(&tc->neighbor_discovery_conn, channels,

@@ -63,10 +63,6 @@ while (cc > 0) {
 		xj=0;
 		xi=xi+50;		
 	}
-	
-
-	// x = 20;   // in case you want to fix the location of event
-	// y = 20;   
 
 	log.log("Event : " + msg + " was generated on " + time + " at ( " + x + " , " + y + " ) \n");
 	s_time[ctr] = time;  // stores the start time
