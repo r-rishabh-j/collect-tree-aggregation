@@ -236,8 +236,8 @@ struct ctimer pop_timer;
 
 /*---------------------------------------------------------------------------*/
 
-#define AGGREGATION_INTERVAL 300
-#define POP_INTERVAL 500
+#define AGGREGATION_INTERVAL 500
+#define POP_INTERVAL 1500
 
 static void aggregationCaller()
 {
@@ -257,7 +257,7 @@ static void push_to_packetqueue(struct collect_conn *tc)
                                           packetbuf_attr(PACKETBUF_ATTR_MAX_REXMIT),
                                       tc))
     {
-        add_packet_to_recent_packets(tc);
+        // add_packet_to_recent_packets(tc);
         printf("SENDING PAKCET\n");
         send_queued_packet(tc);
     }
@@ -1363,6 +1363,7 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
                 printf("PUSHING TO AGG QUEUE\n");
                 aggregation_head = pushCustomQueue(aggregation_head, id, mote_list, exp_time, q, hdr);
                 printf("2AGg LIST len: %d\n", agg_list_len(aggregation_head));
+                add_packet_to_recent_packets(tc);
                 send_ack(tc, &ack_to, 0);
             }
 
@@ -1394,6 +1395,7 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
         }
         else if (packetbuf_attr(PACKETBUF_ATTR_TTL) <= 1)
         {
+            printf("DROPPED TTL\n");
             PRINTF("%d.%d: packet dropped: ttl %d\n",
                    linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1],
                    packetbuf_attr(PACKETBUF_ATTR_TTL));
@@ -1422,6 +1424,7 @@ static void
 timedout(struct collect_conn *tc)
 {
     struct collect_neighbor *n;
+    printf("DROPPED_timedout\n");
     PRINTF("%d.%d: timedout after %d retransmissions to %d.%d (max retransmissions %d): packet dropped\n",
            linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1], tc->transmissions,
            tc->current_parent.u8[0], tc->current_parent.u8[1],
@@ -1842,6 +1845,7 @@ int collect_send(struct collect_conn *tc, int rexmits)
         }
         else
         {
+            printf("NOQUEUEBUF dropped\n");
             PRINTF("%d.%d: drop originated packet: no queuebuf\n",
                    linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1]);
             PRINTF("%d.%d: drop originated packet: no queuebuf\n",

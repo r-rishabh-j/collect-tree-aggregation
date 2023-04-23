@@ -5,7 +5,7 @@ var ref = ["Hello", "Hello", "Hello", "Hello"];
 var last = [];
 var ctr = 0;
 var arr = [];
-var range = [15, 20, 25, 30, 35];   // radius of every event
+var range = [90, 80, 100];   // radius of every event
 var count = allm.length;
 
 var s_time = [];
