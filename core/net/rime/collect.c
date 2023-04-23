@@ -69,7 +69,7 @@ static const struct packetbuf_attrlist attributes[] =
    forwarded. This list is maintained to avoid forwarding duplicate
    packets. */
 #define NUM_RECENT_PACKETS 16
-int mode_id=-1;
+int mote_id=-1;
 struct recent_packet
 {
     struct collect_conn *conn;
@@ -232,7 +232,7 @@ struct ctimer pop_timer;
 /*---------------------------------------------------------------------------*/
 
 #define AGGREGATION_INTERVAL 200
-#define POP_INTERVAL 300
+#define POP_INTERVAL 600
 
 static void aggregationCaller()
 {
@@ -1347,7 +1347,18 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
             printf("MOTE-LIST: %s\n", mote_list);
             struct queuebuf *q = queuebuf_new_from_packetbuf();
             printf("BEFORE HE\n");
-            long exp_time = 2000;
+
+
+            long exp_time = 500;
+            if(mote_id==3 || mote_id==2)
+            {
+                exp_time = 5000;
+            }
+            else 
+            {
+                exp_time = 1000;
+            }
+            
             if (q != NULL)
             {
                 printf("PUSHING TO AGG QUEUE\n");
@@ -1634,7 +1645,7 @@ void collect_open(struct collect_conn *tc, uint16_t channels,
     tc->send_queue.memb = &send_queue_memb;
     collect_neighbor_init();
     /*CTIMER FOR QUEUE AGGREGATION*/
-    mode_id=moteid;
+    mote_id=moteid;
     ctimer_set(&aggregation_timer, AGGREGATION_INTERVAL, aggregationCaller, NULL);
     ctimer_set(&pop_timer, POP_INTERVAL, popAggregationQueueCaller, tc);
 

@@ -5,7 +5,7 @@ var ref = ["Hello", "Hello", "Hello", "Hello"];
 var last = [];
 var ctr = 0;
 var arr = [];
-var range = [15, 20, 25, 30, 35];   // radius of every event
+var range = [45, 45, 45, 45, 45];   // radius of every event
 var count = allm.length;
 
 var s_time = [];
@@ -29,7 +29,9 @@ for (var i = 0; i < allm.length; i++) {
 
 }
 log.log("******\n");
-var cc = 1000;
+var cc = 3;
+
+var eventPos =[[6.9,59.54],[52.04,57.75],[95,61]]
 
 
 while (cc > 0) {
@@ -66,8 +68,15 @@ while (cc > 0) {
 	}
 	var flag = 0;
 	//WAIT_UNTIL (msg.equals(ref[k]));
-	var x = Math.floor((Math.random() * x_size));  // 
-	var y = Math.floor((Math.random() * y_size));  // generate event at x,y 
+	//var x = Math.floor((Math.random() * x_size));  // 
+	//var y = Math.floor((Math.random() * y_size));  // generate event at x,y 
+	
+	
+
+	var x = eventPos[cc][0]
+	var y = eventPos[cc][1]
+	
+
 	// x = 20;   // in case you want to fix the location of event
 	// y = 20;   
 
