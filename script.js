@@ -1,4 +1,8 @@
-TIMEOUT(24000);
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+TIMEOUT(120000);
 allm = sim.getMotes();
 
 

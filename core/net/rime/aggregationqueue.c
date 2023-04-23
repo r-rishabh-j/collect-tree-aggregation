@@ -86,10 +86,11 @@ void aggregateCustomQueue(struct queueElement **Head)
   *Head = head;
 }
 
-struct queueElement *pushCustomQueue(struct queueElement *head, int Eid, char srcList[100], long expirationTime, struct queuebuf *q, struct data_msg_hdr *hdr)
+struct queueElement *pushCustomQueue(struct queueElement *head, int Eid, char srcList[100], uint32_t expirationTime, struct queuebuf *q, struct data_msg_hdr *hdr)
 {
 
   uint32_t time_in_mill = clock_time() * (1000 / CLOCK_SECOND);
+  printf("TIME %lu, EXP TIME %lu\n", time_in_mill, expirationTime);
 
   // adding the expiration time to current time in miliseconds
   expirationTime += time_in_mill;
@@ -161,9 +162,10 @@ struct queueElement *popCustomQueue(struct queueElement **Head)
     // current time in miliseconds
     long currentTime = time_in_mill;
 
-    // if (ptr->expirationTIme <= currentTime)
     if (ptr->expirationTIme <= currentTime)
+    // if (1)
     {
+      printf("POPPING\n");
       if (ptr == head)
       {
         head = head->next;

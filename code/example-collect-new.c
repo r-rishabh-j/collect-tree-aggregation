@@ -20,7 +20,7 @@ static void
 recv(const linkaddr_t *originator, uint8_t seqno, uint8_t hops)
 {
     char *dt = packetbuf_dataptr();
-    printf("Sink got message from %d.%d, seqno %d, hops %d: len %d '%s'\n",
+    printf("Sink got message from %d.%d, seqno %d, hops %d: len %d MSG=>'%s'\n",
            originator->u8[0], originator->u8[1],
            seqno, hops,
            packetbuf_datalen(),
@@ -51,7 +51,7 @@ PROCESS_THREAD(example_collect_process, ev, data)
     PROCESS_WAIT_UNTIL(etimer_expired(&et));
 
     set_distance(address);
-
+    printf("STARTING WHILE LOOP\n");
     while (1)
     {
         PROCESS_WAIT_EVENT();
@@ -71,7 +71,7 @@ PROCESS_THREAD(example_collect_process, ev, data)
             packetbuf_set_datalen(sprintf(packetbuf_dataptr(),
                                           "%s|%d", line, linkaddr_node_addr.u8[0]) +
                                   1);
-            collect_send(&tc, 15);
+            collect_send(&tc, 1);
 
             parent = collect_parent(&tc);
             if (!linkaddr_cmp(parent, &oldparent))
