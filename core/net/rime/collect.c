@@ -57,7 +57,6 @@
 #include <stddef.h>
 #include "aggregationqueue.c"
 #include <stdlib.h>
-// #include "packetqueue.h"
 
 static const struct packetbuf_attrlist attributes[] =
     {
@@ -236,12 +235,11 @@ struct ctimer pop_timer;
 
 /*---------------------------------------------------------------------------*/
 
-#define AGGREGATION_INTERVAL 400
-#define POP_INTERVAL 600
+#define AGGREGATION_INTERVAL 200
+#define POP_INTERVAL 250
 
 static void aggregationCaller()
 {
-    printf("AGGREGATING\n");
     aggregateCustomQueue(&aggregation_head);
     ctimer_restart(&aggregation_timer);
 }
@@ -250,43 +248,21 @@ void add_packet_to_recent_packets(struct collect_conn *tc);
 
 static void push_to_packetqueue(struct collect_conn *tc)
 {
-    printf("HAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
     if (packetqueue_len(&tc->send_queue) <= MAX_SENDING_QUEUE - MIN_AVAILABLE_QUEUE_ENTRIES &&
         packetqueue_enqueue_packetbuf(&tc->send_queue,
                                       FORWARD_PACKET_LIFETIME_BASE *
                                           packetbuf_attr(PACKETBUF_ATTR_MAX_REXMIT),
                                       tc))
     {
-        // add_packet_to_recent_packets(tc);
-        printf("SENDING PAKCET\n");
         send_queued_packet(tc);
         
     }
-    // else
-    // {
-    //     send_ack(tc, &ack_to, ackflags | ACK_FLAGS_DROPPED | ACK_FLAGS_CONGESTED);
-    //     PRINTF("%d.%d: packet dropped: no queue buffer available\n",
-    //            linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1]);
-    //     stats.qdrop++;
-    // }
 }
 
 static void popAggregationQueueCaller(struct collect_conn *tc)
 {
-    printf("POP CUSTOM QUEUE\n");
-    printf("AGg LIST len: %d\n", agg_list_len(aggregation_head));
     struct queueElement *popped = popCustomQueue(&aggregation_head);
-    if (popped == NULL)
-    {
-        printf("NULLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL\n");
-    }
-    else
-    {
-        printf("NOT-NULL");
-    }
     struct queuebuf *q = queuebuf_new_from_packetbuf();
-
-
 
     while (popped != NULL)
     {
@@ -297,15 +273,8 @@ static void popAggregationQueueCaller(struct collect_conn *tc)
         printf("ID: %d, SRC: %s\n", popped->Eid, popped->srcList);
         packetbuf_set_datalen(sprintf(packetbuf_dataptr(), "ID:%d|%s", popped->Eid, popped->srcList) + 1);
         packetbuf_hdralloc(sizeof(struct data_msg_hdr));
-        // memcpy(packetbuf_dataptr(), popped->hdr_data, sizeof(struct data_msg_hdr));
-        printf("HO: %s\n", packetbuf_dataptr());
-        if (packetbuf_attr(PACKETBUF_ATTR_PACKET_TYPE) !=
-        PACKETBUF_ATTR_PACKET_TYPE_DATA){
-            printf("BADDDDDDDDDDD!\n");
-        }
-        printf("TTL: %d, EID: %d\n", packetbuf_attr(PACKETBUF_ATTR_TTL), popped->Eid);
         push_to_packetqueue(tc);
-        free(popped->hdr_data);
+        // free(popped->hdr_data);
         queuebuf_free(popped->q);
         struct queueElement *nextPtr = popped->next;
         free(popped);
@@ -494,6 +463,7 @@ update_parent(struct collect_conn *tc)
                       }
                       PRINTF("\n");
                       }*/
+                      
                 }
             }
             else
@@ -730,14 +700,12 @@ void aggregate_buffer(char *a, char *b, char *out)
 
 int get_event_id(char *buf)
 {
-    char id_str[30];
+    char id_str[100];
     buf = buf + 3;
     sprintf(id_str, "%s", buf);
-    // printf("ID1: %s/", id_str);
     char *last = strchr(id_str, '|');
     *last = 0;
     int id = atoi(id_str);
-    // printf("ID is %d\n", id);
     return id;
 }
 
@@ -772,7 +740,7 @@ send_queued_packet(struct collect_conn *c)
        another one. */
     if (c->sending)
     {
-        printf("%d.%d: queue, c is sending\n",
+        PRINTF("%d.%d: queue, c is sending\n",
                linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1]);
         return;
     }
@@ -811,7 +779,7 @@ send_queued_packet(struct collect_conn *c)
             buffer attributes and set the appropriate flags in the
             Collect connection structure and send the packet. */
 
-            printf("%d.%d: sending packet to %d.%d with eseqno %d\n",
+            PRINTF("%d.%d: sending packet to %d.%d with eseqno %d\n",
                    linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1],
                    n->addr.u8[0], n->addr.u8[1],
                    packetbuf_attr(PACKETBUF_ATTR_EPACKET_ID));
@@ -1202,11 +1170,11 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
 
     memcpy(hdr, packetbuf_dataptr(), sizeof(struct data_msg_hdr));
     // memcpy(&hdr, packetbuf_hdrptr(), sizeof(struct data_msg_hdr));
-    printf("RTMETRIC: %d\n", hdr->rtmetric);
+    PRINTF("RTMETRIC: %d\n", hdr->rtmetric);
 
     /* First update the neighbors rtmetric with the information in the
        packet header. */
-    printf("node_packet_received: from %d.%d rtmetric %d\n",
+    PRINTF("node_packet_received: from %d.%d rtmetric %d\n",
            from->u8[0], from->u8[1], hdr->rtmetric);
     // printf("node_packet_received: from %d.%d rtmetric %d\n",
     //        from->u8[0], from->u8[1], hdr.rtmetric);
@@ -1277,10 +1245,7 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
         if (tc->rtmetric == RTMETRIC_SINK)
         {
             struct queuebuf *q;
-            printf("Sink packet recevied!\n");
-
             add_packet_to_recent_packets(tc);
-            // printf("AT SINK\n");
 
             /* We first send the ACK. We copy the data packet to a queuebuf
                first. */
@@ -1359,35 +1324,23 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
                are originated by this node. */
             packetbuf_hdrreduce(sizeof(struct data_msg_hdr));
             char *dataptr = (char *)packetbuf_dataptr();
-            printf("MEEE %s\n", dataptr);
-            // while (dataptr[0] != 'I')
-            // {
-            //     dataptr += 1;
-            // }
             printf("DATAPTR- %s\n", dataptr);
             int id = get_event_id(dataptr);
-            printf("EVENT-ID - %d ", id);
             char mote_list[100];
             get_mote_list(dataptr, mote_list);
-            printf("MOTE-LIST: %s\n", mote_list);
+            printf("EVENTID: %d, SRCL: %s\n", id, mote_list);
             struct queuebuf *q = queuebuf_new_from_packetbuf();
-            printf("BEFORE HE\n");
 
             double rt = tc->rtmetric;
             rt = rt / RTMETRIC_MAX;
             // long exp_time = -(long)(((double)1300)*rt) + 1700;
-            long exp_time = -(long)(((double)1300) * rt) + 5000;
-            printf("EXPIRATION TIME : %ld\n", exp_time);
+            // long exp_time = -(long)(((double)1300) * rt) + 5000;
+            long exp_time = -(long)(((double)500) * rt) + 1000;
             if (q != NULL)
             {
-                printf("PUSHING TO AGG QUEUE\n");
-                aggregation_head = pushCustomQueue(aggregation_head, id, mote_list, exp_time, q, hdr);
-                printf("2AGg LIST len: %d\n", agg_list_len(aggregation_head));
+                aggregation_head = pushCustomQueue(aggregation_head, id, mote_list, exp_time, q);
                 add_packet_to_recent_packets(tc);
                 send_ack(tc, &ack_to, 0);
-            }
-            else{
-                printf("NODE PACKET Q NULL");
             }
 
             // if (packetqueue_len(&tc->send_queue) <= MAX_SENDING_QUEUE - MIN_AVAILABLE_QUEUE_ENTRIES &&
@@ -1423,9 +1376,7 @@ node_packet_received(struct unicast_conn *c, const linkaddr_t *from)
             {
                 dataptr += 4;
             }
-            printf("DATAPTR- %s\n", dataptr);
             int id = get_event_id(dataptr);
-            printf("DROPPED TTL, eID: %d\n", id);
             PRINTF("%d.%d: packet dropped: ttl %d\n",
                    linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1],
                    packetbuf_attr(PACKETBUF_ATTR_TTL));
@@ -1454,7 +1405,6 @@ static void
 timedout(struct collect_conn *tc)
 {
     struct collect_neighbor *n;
-    printf("DROPPED_timedout\n");
     PRINTF("%d.%d: timedout after %d retransmissions to %d.%d (max retransmissions %d): packet dropped\n",
            linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1], tc->transmissions,
            tc->current_parent.u8[0], tc->current_parent.u8[1],
@@ -1666,7 +1616,6 @@ void set_distance(linkaddr_t address)
 
     // Calculate the path length from the current node to the sink
     uint8_t path_length = collect_depth(linkaddr_cmp(&linkaddr_null, &address)) + 1; // +1 to include the current node
-    printf("DISTANCE IS %d\n", path_length);
     distance_to_sink = path_length;
 }
 
@@ -1690,7 +1639,7 @@ void collect_open(struct collect_conn *tc, uint16_t channels,
     mote_address = address;
     mode_id = address.u8[0];
     ctimer_set(&aggregation_timer, AGGREGATION_INTERVAL, aggregationCaller, NULL);
-    ctimer_set(&pop_timer, POP_INTERVAL*480, popAggregationQueueCaller, tc);
+    ctimer_set(&pop_timer, POP_INTERVAL*10, popAggregationQueueCaller, tc);
 
 #if !COLLECT_ANNOUNCEMENTS
     neighbor_discovery_open(&tc->neighbor_discovery_conn, channels,
@@ -1843,7 +1792,7 @@ int collect_send(struct collect_conn *tc, int rexmits)
         packetbuf_set_attr(PACKETBUF_ATTR_MAX_REXMIT, rexmits);
     }
 
-    printf("%d.%d: originating packet %d, max_rexmits %d\n",
+    PRINTF("%d.%d: originating packet %d, max_rexmits %d\n",
            linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1],
            packetbuf_attr(PACKETBUF_ATTR_EPACKET_ID),
            packetbuf_attr(PACKETBUF_ATTR_MAX_REXMIT));
@@ -1864,31 +1813,20 @@ int collect_send(struct collect_conn *tc, int rexmits)
         
        // printf("First time send");
         char *dataptr = (char *)packetbuf_dataptr();
-        printf("CLSEND %s\n", dataptr);
-        printf("DATAPTR- %s\n", dataptr);
+        printf("CLDATAPTR- %s\n", dataptr);
         int id = get_event_id(dataptr);
-        printf("EVENT-ID - %d ", id);
         char mote_list[100];
         get_mote_list(dataptr, mote_list);
-        printf("MOTE-LIST: %s\n", mote_list);
         struct queuebuf *q = queuebuf_new_from_packetbuf();
 
         double rt = tc->rtmetric;
         rt = rt / RTMETRIC_MAX;
         // long exp_time = -(long)(((double)1300)*rt) + 1700;
         long exp_time = -(long)(((double)1300) * rt) + 5000;
-        printf("EXPIRATION TIME : %ld\n", exp_time);
         if (q != NULL)
         {
-            printf("First time send");
-            printf("PUSHING TO AGG QUEUE CLSEND\n");
-            aggregation_head = pushCustomQueue(aggregation_head, id, mote_list, exp_time, q, NULL);
-            printf("2AGg LIST len: %d\n", agg_list_len(aggregation_head));
+            aggregation_head = pushCustomQueue(aggregation_head, id, mote_list, exp_time, q);
             add_packet_to_recent_packets(tc);
-        }
-        else
-        {
-            printf("SEND Q NULL");
         }
 
         /* Allocate space for the header. */

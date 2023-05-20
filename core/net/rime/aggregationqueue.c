@@ -13,7 +13,7 @@ struct queueElement
   struct queueElement *prev;
   struct queueElement *next;
   struct queuebuf *q;
-  struct data_msg_hdr *hdr_data;
+  // struct data_msg_hdr *hdr_data;
   struct ctimer aggregation_timer;
 };
 
@@ -29,18 +29,14 @@ void aggregateCustomQueue(struct queueElement **Head)
   while (ptr != NULL)
   {
     struct queueElement *it = ptr->next;
-    
-    
-    
     while (it != NULL)
     {
       
       if (it->Eid == ptr->Eid)
       {
-        printf("FOUND!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
         // saving the ptr information for que buff and headers that are to be freed
         struct queuebuf *toFreeq = it->q;
-        struct data_msg_hdr *toFreeHdr = it->hdr_data;
+        // struct data_msg_hdr *toFreeHdr = it->hdr_data;
 
         // making a bigger source list.
         sprintf(ptr->srcList, "%s##%s", ptr->srcList, it->srcList);
@@ -51,15 +47,15 @@ void aggregateCustomQueue(struct queueElement **Head)
           ptr->expirationTIme = it->expirationTIme;
 
           toFreeq = ptr->q;
-          toFreeHdr = ptr->hdr_data;
+          // toFreeHdr = ptr->hdr_data;
 
           // overwriting the queue pointer
           ptr->q = it->q;
-          ptr->hdr_data = it->hdr_data;
+          // ptr->hdr_data = it->hdr_data;
         }
 
         queuebuf_free(toFreeq);
-        free(toFreeHdr);
+        // free(toFreeHdr);
 
         // we need to delete this element now.
         struct queueElement *toDel = it;
@@ -87,11 +83,11 @@ void aggregateCustomQueue(struct queueElement **Head)
   *Head = head;
 }
 
-struct queueElement *pushCustomQueue(struct queueElement *head, int Eid, char srcList[100], uint32_t expirationTime, struct queuebuf *q, struct data_msg_hdr *hdr)
+struct queueElement *pushCustomQueue(struct queueElement *head, int Eid, char srcList[100], uint32_t expirationTime, struct queuebuf *q)
 {
 
   uint32_t time_in_mill = clock_time() * (1000 / CLOCK_SECOND);
-  printf("TIME %lu, EXP TIME %lu\n", time_in_mill, expirationTime);
+  // printf("TIME %lu, EXP TIME %lu\n", time_in_mill, expirationTime);
 
   // adding the expiration time to current time in miliseconds
   expirationTime += time_in_mill;
@@ -105,17 +101,8 @@ struct queueElement *pushCustomQueue(struct queueElement *head, int Eid, char sr
     head->expirationTIme = expirationTime;
     head->Eid = Eid;
     head->q = q;
-    head->hdr_data = hdr;
     sprintf(head->srcList, "%s", srcList);
-    printf("The packet queue of this mote ->\n");
-
     struct queueElement *it = head;
-
-    while(it!=NULL)
-    {
-      printf("%d,%s---",it->Eid,it->srcList);
-      it=it->next;
-    }
     
     return head;
   }
@@ -130,18 +117,18 @@ struct queueElement *pushCustomQueue(struct queueElement *head, int Eid, char sr
   head = newHead;
   head->Eid = Eid;
   head->q = q;
-  head->hdr_data = hdr;
+  // head->hdr_data = hdr;
   sprintf(head->srcList, "%s", srcList);
   
-  printf("The packet queue of this mote ->\n");
+  // printf("The packet queue of this mote ->\n");
 
   struct queueElement *it = head;
 
-  while(it!=NULL)
-  {
-    printf("%d,%s---",it->Eid,it->srcList);
-    it=it->next;
-  }
+  // while(it!=NULL)
+  // {
+  //   printf("%d,%s---",it->Eid,it->srcList);
+  //   it=it->next;
+  // }
   
   
   
@@ -167,7 +154,7 @@ int agg_list_len(struct queueElement *head)
 struct queueElement *popCustomQueue(struct queueElement **Head)
 {
 
-  printf("POP called");
+  // printf("POP called");
   struct queueElement *newList = NULL;
 
   struct queueElement *head = *Head;
@@ -192,11 +179,11 @@ struct queueElement *popCustomQueue(struct queueElement **Head)
 
     // current time in miliseconds
     long currentTime = time_in_mill;
-    printf("Time data->%ld^^%ld",currentTime,ptr->expirationTIme);
+    // printf("Time data->%ld^^%ld",currentTime,ptr->expirationTIme);
     if (ptr->expirationTIme <= currentTime)
     // if (1)
     {
-      printf("POPPING\n");
+      // printf("POPPING\n");
       if (ptr == head)
       {
         head = head->next;
@@ -229,11 +216,11 @@ struct queueElement *popCustomQueue(struct queueElement **Head)
   struct queueElement* toPrint=newList;
   if(toPrint==NULL)
   {
-    printf("Nothing to POP\n");
+    // printf("Nothing to POP\n");
   }
   while(toPrint!=NULL)
   {
-    printf("%d,%s***",toPrint->Eid,toPrint->srcList);
+    // printf("%d,%s***",toPrint->Eid,toPrint->srcList);
     toPrint=toPrint->next;
   }
 

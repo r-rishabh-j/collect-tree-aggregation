@@ -30,8 +30,8 @@ var count_elem = [];
 // }
 log.log("******\n");
 var cc = 30;
-var xi = 0
-var xj = 0
+var xi = 0;
+var xj = 0;
 
 while (cc > 0) {
 	var refer_msg = msg;

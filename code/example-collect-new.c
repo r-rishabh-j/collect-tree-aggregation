@@ -2,6 +2,7 @@
 #include "lib/random.h"
 #include "net/rime/rime.h"
 #include "net/rime/collect.h"
+#include "powertrace.h"
 #include "dev/leds.h"
 #include "dev/button-sensor.h"
 #include "dev/serial-line.h"
@@ -19,12 +20,8 @@ AUTOSTART_PROCESSES(&example_collect_process);
 static void
 recv(const linkaddr_t *originator, uint8_t seqno, uint8_t hops)
 {
-    char *dt = packetbuf_dataptr();
-    printf("Sink got message from %d.%d, seqno %d, hops %d: len %d MSG=>'%s'\n",
-           originator->u8[0], originator->u8[1],
-           seqno, hops,
-           packetbuf_datalen(),
-           (char *)packetbuf_dataptr());
+    // char *dt = packetbuf_dataptr();
+    printf("Sink got message =>'%s'\n", (char *)packetbuf_dataptr());
 }
 /*---------------------------------------------------------------------------*/
 static const struct collect_callbacks callbacks = {recv};
@@ -35,10 +32,12 @@ PROCESS_THREAD(example_collect_process, ev, data)
     static struct etimer periodic;
     static struct etimer et;
     PROCESS_BEGIN();
+    powertrace_start(CLOCK_SECOND*10);
 
     linkaddr_t address;
     linkaddr_copy(&address, &linkaddr_node_addr);
     collect_open(&tc, 130, COLLECT_ROUTER, linkaddr_node_addr, &callbacks);
+
 
     if (linkaddr_node_addr.u8[0] == 1 &&
         linkaddr_node_addr.u8[1] == 0)
@@ -88,6 +87,7 @@ PROCESS_THREAD(example_collect_process, ev, data)
             }
         }
         PROCESS_END();
+
     }
 }
 /*---------------------------------------------------------------------------*/
